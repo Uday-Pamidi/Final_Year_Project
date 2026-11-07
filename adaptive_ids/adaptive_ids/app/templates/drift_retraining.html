@@ -1,0 +1,574 @@
+{% extends "base.html" %}
+
+{% block title %}Concept Drift & Retraining{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Top Action Banner & Header -->
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 p-6 rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] shadow-lg relative overflow-hidden">
+        <div class="absolute -right-16 -top-16 w-56 h-56 bg-gradient-to-br from-amber-500/10 to-indigo-500/0 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div>
+            <div class="flex items-center space-x-2 mb-1.5">
+                <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+                <span class="text-[11px] font-mono uppercase tracking-wider text-[var(--text-muted)] font-semibold">Autonomous ML Governance &bull; MLOps</span>
+            </div>
+            <h1 class="text-2xl font-bold tracking-tight text-[var(--text-primary)]">
+                Concept Drift Detection & Dynamic Retraining
+            </h1>
+            <p class="text-xs sm:text-sm text-[var(--text-muted)] mt-1 max-w-2xl">
+                Continuous statistical distribution surveillance using Two-Sample Kolmogorov-Smirnov (KS) tests, Population Stability Index (PSI), and Adaptive Windowing (ADWIN) streaming algorithms.
+            </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2.5 shrink-0 z-10">
+            <!-- Inject Drift Wave Button -->
+            <button 
+                onclick="injectDriftWave()" 
+                id="inject-drift-btn"
+                class="soc-btn-secondary text-xs border-amber-500/30 hover:border-amber-500/60 text-amber-400 hover:bg-amber-500/10"
+                title="Simulate zero-day mutated traffic wave to induce concept drift"
+            >
+                <i data-lucide="wind" class="w-3.5 h-3.5 mr-1.5 text-amber-400"></i>
+                <span>Inject Drift Wave</span>
+            </button>
+
+            <!-- Execute Dynamic Model Retraining -->
+            <button 
+                id="manual-retrain-btn" 
+                onclick="executeRetrain()" 
+                class="soc-btn-primary text-xs"
+            >
+                <i data-lucide="refresh-cw" class="w-3.5 h-3.5 mr-1.5"></i>
+                <span>Retrain Booster Incrementally</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Prominent Drift Status Overview Card -->
+    <div id="drift-status-banner" class="soc-card p-6 border-emerald-500/30 bg-emerald-950/10 transition-all duration-300">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div class="flex items-start sm:items-center space-x-4">
+                <div id="drift-status-icon" class="w-13 h-13 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0 p-3 shadow-inner">
+                    <i data-lucide="shield-check" class="w-7 h-7"></i>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-[10px] uppercase font-mono font-bold tracking-widest text-[var(--text-muted)]">Real-Time Distribution State</span>
+                        <span id="drift-health-pill" class="soc-badge border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-[10px]">HEALTHY</span>
+                    </div>
+                    <div id="drift-status-title" class="text-xl sm:text-2xl font-black text-emerald-400 font-mono tracking-tight mt-0.5">
+                        TRAFFIC DISTRIBUTION STABLE
+                    </div>
+                    <div id="drift-status-desc" class="text-xs text-[var(--text-muted)] mt-1 max-w-2xl leading-relaxed">
+                        Active sliding window distribution aligns with reference baseline training profile (Two-Sample KS p-values &gt; 0.05). No statistically significant model drift.
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-4 border-t lg:border-t-0 lg:border-l border-[var(--border-subtle)] pt-4 lg:pt-0 lg:pl-6 shrink-0">
+                <div class="bg-[var(--bg-elevated)] p-3 rounded-xl border border-[var(--border-subtle)]">
+                    <span class="text-[var(--text-muted)] block text-[10px] font-mono uppercase">Active Window</span>
+                    <span id="drift-active-win" class="text-[var(--text-primary)] font-mono font-bold text-sm block mt-0.5">0 / 100</span>
+                    <span class="text-[9px] text-[var(--text-muted)]">Target min: 25</span>
+                </div>
+                <div class="bg-[var(--bg-elevated)] p-3 rounded-xl border border-[var(--border-subtle)]">
+                    <span class="text-[var(--text-muted)] block text-[10px] font-mono uppercase">Baseline Buffer</span>
+                    <span id="drift-base-win" class="text-[var(--text-primary)] font-mono font-bold text-sm block mt-0.5">400 flows</span>
+                    <span class="text-[9px] text-emerald-400 font-mono">Trained Baseline</span>
+                </div>
+                <div class="bg-[var(--bg-elevated)] p-3 rounded-xl border border-[var(--border-subtle)]">
+                    <span class="text-[var(--text-muted)] block text-[10px] font-mono uppercase">ADWIN Cut</span>
+                    <span id="drift-adwin-stat" class="text-emerald-400 font-mono font-bold text-sm block mt-0.5">NO SIGNAL</span>
+                    <span class="text-[9px] text-[var(--text-muted)]">&delta; = 0.01 Cut</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row: KS Feature Divergence & Version Evolution -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- KS Statistic Bar Chart -->
+        <div class="soc-card p-5">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h3 class="text-sm font-bold text-[var(--text-primary)] flex items-center">
+                        <i data-lucide="bar-chart-3" class="w-4 h-4 text-indigo-400 mr-2"></i>
+                        Feature Distribution Divergence (KS Statistic D)
+                    </h3>
+                    <p class="text-xs text-[var(--text-muted)] mt-0.5">Two-Sample Kolmogorov-Smirnov distance vs reference baseline. Threshold D &gt; 0.18 flags drift.</p>
+                </div>
+                <span class="soc-badge border-indigo-500/20 bg-indigo-500/10 text-indigo-400 text-[10px] font-mono">
+                    16 FEATURES
+                </span>
+            </div>
+            <div class="h-64 relative">
+                <canvas id="ksBarChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Dynamic Model Adaptation Progression Chart -->
+        <div class="soc-card p-5">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h3 class="text-sm font-bold text-[var(--text-primary)] flex items-center">
+                        <i data-lucide="trending-up" class="w-4 h-4 text-emerald-400 mr-2"></i>
+                        Dynamic Model Adaptation Progression
+                    </h3>
+                    <p class="text-xs text-[var(--text-muted)] mt-0.5">Weighted F1-score & Accuracy trajectory across autonomous model versions</p>
+                </div>
+                <span class="soc-badge border-emerald-500/20 bg-emerald-500/10 text-emerald-400 text-[10px] font-mono">
+                    INCREMENTAL
+                </span>
+            </div>
+            <div class="h-64 relative">
+                <canvas id="versionEvolutionChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feature-by-Feature Statistical Drift Table -->
+    <div class="soc-card overflow-hidden">
+        <div class="p-5 border-b border-[var(--border-subtle)] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+                <h3 class="text-sm font-bold text-[var(--text-primary)] flex items-center">
+                    <i data-lucide="table-2" class="w-4 h-4 text-indigo-400 mr-2"></i>
+                    Network Feature Statistical Drift Analysis
+                </h3>
+                <p class="text-xs text-[var(--text-muted)] mt-0.5">
+                    Kolmogorov-Smirnov supremum distance &amp; Population Stability Index (PSI) calculated per dimension
+                </p>
+            </div>
+            <div class="flex items-center space-x-2">
+                <button onclick="loadDriftMetrics()" class="soc-btn-secondary text-xs">
+                    <i data-lucide="rotate-cw" class="w-3.5 h-3.5 mr-1.5"></i>
+                    Refresh Analysis
+                </button>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs font-sans">
+                <thead class="bg-[var(--bg-elevated)] text-[var(--text-muted)] uppercase text-[10px] tracking-wider font-mono border-b border-[var(--border-subtle)]">
+                    <tr>
+                        <th class="py-3 px-4 font-semibold">Network Feature</th>
+                        <th class="py-3 px-4 font-semibold">KS Statistic (D)</th>
+                        <th class="py-3 px-4 font-semibold">p-value</th>
+                        <th class="py-3 px-4 font-semibold">PSI Score</th>
+                        <th class="py-3 px-4 font-semibold">Distribution Status</th>
+                    </tr>
+                </thead>
+                <tbody id="drift-metrics-tbody" class="divide-y divide-[var(--border-subtle)] text-[var(--text-primary)] font-mono">
+                    <tr>
+                        <td colspan="5" class="py-8 text-center text-[var(--text-muted)] font-sans">
+                            <div class="inline-flex items-center space-x-2">
+                                <i data-lucide="loader" class="w-4 h-4 animate-spin text-indigo-400"></i>
+                                <span>Evaluating statistical feature distributions...</span>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Incremental Model Versions Registry & Audit Log -->
+    <div class="soc-card overflow-hidden">
+        <div class="p-5 border-b border-[var(--border-subtle)] flex items-center justify-between">
+            <div>
+                <h3 class="text-sm font-bold text-[var(--text-primary)] flex items-center">
+                    <i data-lucide="git-commit" class="w-4 h-4 text-purple-400 mr-2"></i>
+                    Incremental Model Version Registry & Audit Trail
+                </h3>
+                <p class="text-xs text-[var(--text-muted)] mt-0.5">
+                    Immutable history of autonomous updates incorporating CTI-validated threat sightings
+                </p>
+            </div>
+            <span class="soc-badge border-purple-500/20 bg-purple-500/10 text-purple-400 text-[10px] font-mono">
+                REPLAY BUFFER ACTIVE
+            </span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs font-sans">
+                <thead class="bg-[var(--bg-elevated)] text-[var(--text-muted)] uppercase text-[10px] tracking-wider font-mono border-b border-[var(--border-subtle)]">
+                    <tr>
+                        <th class="py-3 px-4 font-semibold">Version</th>
+                        <th class="py-3 px-4 font-semibold">Timestamp</th>
+                        <th class="py-3 px-4 font-semibold">Trigger Reason</th>
+                        <th class="py-3 px-4 font-semibold">CTI Added</th>
+                        <th class="py-3 px-4 font-semibold">Training Pool</th>
+                        <th class="py-3 px-4 font-semibold">Accuracy</th>
+                        <th class="py-3 px-4 font-semibold">Precision</th>
+                        <th class="py-3 px-4 font-semibold">Recall</th>
+                        <th class="py-3 px-4 font-semibold">F1-Score</th>
+                    </tr>
+                </thead>
+                <tbody id="version-registry-tbody" class="divide-y divide-[var(--border-subtle)] text-[var(--text-primary)] font-mono">
+                    <tr>
+                        <td colspan="9" class="py-8 text-center text-[var(--text-muted)] font-sans">
+                            <div class="inline-flex items-center space-x-2">
+                                <i data-lucide="loader" class="w-4 h-4 animate-spin text-purple-400"></i>
+                                <span>Loading version audit registry...</span>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let ksBarChart = null;
+    let versionChart = null;
+
+    function getChartThemeColors() {
+        const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+        return {
+            textColor: isDark ? '#94A3B8' : '#475569',
+            gridColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.06)',
+            tooltipBg: isDark ? '#121A2F' : '#FFFFFF',
+            tooltipBorder: isDark ? 'rgba(255, 255, 255, 0.1)' : '#E2E8F0',
+            tooltipText: isDark ? '#F1F5F9' : '#0F172A'
+        };
+    }
+
+    async function loadDriftMetrics() {
+        try {
+            const res = await fetch('/api/drift/status');
+            if (res.ok) {
+                const data = await res.json();
+                renderDriftOverview(data);
+                renderDriftTable(data.metrics || []);
+                renderKSChart(data.metrics || []);
+            }
+
+            const verRes = await fetch('/api/models/versions');
+            if (verRes.ok) {
+                const versions = await verRes.json();
+                renderVersionRegistry(versions);
+                renderVersionChart(versions);
+            }
+        } catch (e) {
+            console.error("Error loading drift status:", e);
+        }
+    }
+
+    function renderDriftOverview(data) {
+        const banner = document.getElementById('drift-status-banner');
+        const icon = document.getElementById('drift-status-icon');
+        const title = document.getElementById('drift-status-title');
+        const desc = document.getElementById('drift-status-desc');
+        const pill = document.getElementById('drift-health-pill');
+
+        document.getElementById('drift-active-win').innerText = `${data.active_window_size} / 100`;
+        document.getElementById('drift-base-win').innerText = `${data.baseline_window_size} flows`;
+        
+        const adwinEl = document.getElementById('drift-adwin-stat');
+        if (data.adwin_drift_signal) {
+            adwinEl.innerText = 'CUT TRIGGERED';
+            adwinEl.className = 'text-rose-400 font-mono font-bold text-sm block mt-0.5 animate-pulse';
+        } else {
+            adwinEl.innerText = 'NO SIGNAL';
+            adwinEl.className = 'text-emerald-400 font-mono font-bold text-sm block mt-0.5';
+        }
+
+        if (data.overall_status === 'DRIFT_DETECTED') {
+            banner.className = 'soc-card p-6 border-rose-500/40 bg-rose-950/20 transition-all duration-300';
+            icon.className = 'w-13 h-13 rounded-2xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400 shrink-0 p-3';
+            icon.innerHTML = '<i data-lucide="alert-triangle" class="w-7 h-7"></i>';
+            pill.className = 'soc-badge border-rose-500/40 bg-rose-500/15 text-rose-400 text-[10px]';
+            pill.innerText = 'DRIFT DETECTED';
+            title.innerText = 'CONCEPT DRIFT DETECTED';
+            title.className = 'text-xl sm:text-2xl font-black text-rose-400 font-mono tracking-tight mt-0.5';
+            desc.innerText = `Significant distribution divergence detected on features: ${(data.drifting_features || []).join(', ')}. Model adaptation and online retraining recommended.`;
+        } else if (data.overall_status === 'WARNING') {
+            banner.className = 'soc-card p-6 border-amber-500/40 bg-amber-950/20 transition-all duration-300';
+            icon.className = 'w-13 h-13 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0 p-3';
+            icon.innerHTML = '<i data-lucide="alert-circle" class="w-7 h-7"></i>';
+            pill.className = 'soc-badge border-amber-500/40 bg-amber-500/15 text-amber-400 text-[10px]';
+            pill.innerText = 'WARNING';
+            title.innerText = 'DRIFT WARNING (MARGINAL SHIFT)';
+            title.className = 'text-xl sm:text-2xl font-black text-amber-400 font-mono tracking-tight mt-0.5';
+            desc.innerText = 'Moderate deviation observed in traffic profile. Monitoring for sustained concept shift before triggering retrain.';
+        } else {
+            banner.className = 'soc-card p-6 border-emerald-500/30 bg-emerald-950/10 transition-all duration-300';
+            icon.className = 'w-13 h-13 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0 p-3 shadow-inner';
+            icon.innerHTML = '<i data-lucide="shield-check" class="w-7 h-7"></i>';
+            pill.className = 'soc-badge border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-[10px]';
+            pill.innerText = 'HEALTHY';
+            title.innerText = 'TRAFFIC DISTRIBUTION STABLE';
+            title.className = 'text-xl sm:text-2xl font-black text-emerald-400 font-mono tracking-tight mt-0.5';
+            desc.innerText = 'Active sliding window distribution aligns with reference baseline training profile (Two-Sample KS p-values > 0.05). No statistically significant model drift.';
+        }
+
+        if (window.lucide) window.lucide.createIcons();
+    }
+
+    function renderDriftTable(metrics) {
+        const tbody = document.getElementById('drift-metrics-tbody');
+        if (!metrics || metrics.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-[var(--text-muted)] font-sans">Awaiting sufficient traffic samples in active sliding window (minimum 25 flows)...</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = metrics.map(m => {
+            let badge = '<span class="soc-badge border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-[10px]">STABLE</span>';
+            let rowHighlight = '';
+            
+            if (m.status === 'DRIFT_DETECTED') {
+                badge = '<span class="soc-badge border-rose-500/40 bg-rose-500/15 text-rose-400 text-[10px] font-bold"><i data-lucide="alert-triangle" class="w-3 h-3 mr-1 inline"></i> DRIFT</span>';
+                rowHighlight = 'bg-rose-500/5';
+            } else if (m.status === 'WARNING') {
+                badge = '<span class="soc-badge border-amber-500/30 bg-amber-500/10 text-amber-400 text-[10px] font-bold">WARNING</span>';
+                rowHighlight = 'bg-amber-500/5';
+            }
+
+            const pValColor = m.p_value < 0.05 ? 'text-rose-400 font-bold' : 'text-[var(--text-primary)]';
+            const ksWidth = Math.min(100, Math.round(m.ks_statistic * 100));
+
+            return `
+                <tr class="hover:bg-[var(--bg-hover)] transition ${rowHighlight}">
+                    <td class="py-3 px-4 font-bold ${m.is_drift ? 'text-rose-400' : 'text-[var(--text-primary)]'}">
+                        ${m.feature}
+                    </td>
+                    <td class="py-3 px-4">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-12">${m.ks_statistic.toFixed(4)}</span>
+                            <div class="w-16 h-1.5 bg-[var(--bg-elevated)] rounded-full overflow-hidden border border-[var(--border-subtle)]">
+                                <div class="h-full ${m.is_drift ? 'bg-rose-500' : (m.status === 'WARNING' ? 'bg-amber-500' : 'bg-indigo-500')}" style="width: ${ksWidth}%"></div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-3 px-4 ${pValColor}">${m.p_value.toFixed(4)}</td>
+                    <td class="py-3 px-4 text-[var(--text-muted)]">${m.psi_score.toFixed(4)}</td>
+                    <td class="py-3 px-4">${badge}</td>
+                </tr>
+            `;
+        }).join('');
+
+        if (window.lucide) window.lucide.createIcons();
+    }
+
+    function renderKSChart(metrics) {
+        if (!metrics || metrics.length === 0) return;
+        const labels = metrics.map(m => m.feature.replace('total_', '').replace('_count', ''));
+        const values = metrics.map(m => m.ks_statistic);
+        const colors = metrics.map(m => m.is_drift ? '#F43F5E' : (m.status === 'WARNING' ? '#F59E0B' : '#6366F1'));
+
+        const theme = getChartThemeColors();
+        const ctx = document.getElementById('ksBarChart').getContext('2d');
+        if (ksBarChart) ksBarChart.destroy();
+
+        ksBarChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'KS Statistic D',
+                    data: values,
+                    backgroundColor: colors,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: theme.tooltipBg,
+                        borderColor: theme.tooltipBorder,
+                        borderWidth: 1,
+                        titleColor: theme.tooltipText,
+                        bodyColor: theme.tooltipText,
+                        cornerRadius: 8
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: theme.textColor, font: { family: 'JetBrains Mono', size: 9 }, maxRotation: 45 }
+                    },
+                    y: {
+                        grid: { color: theme.gridColor },
+                        ticks: { color: theme.textColor, font: { family: 'JetBrains Mono', size: 10 } },
+                        min: 0,
+                        max: 1.0
+                    }
+                }
+            }
+        });
+    }
+
+    function renderVersionRegistry(versions) {
+        const tbody = document.getElementById('version-registry-tbody');
+        if (!versions || versions.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="9" class="py-6 text-center text-[var(--text-muted)] font-sans">No version history recorded yet.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = versions.map(v => `
+            <tr class="hover:bg-[var(--bg-hover)] transition">
+                <td class="py-3 px-4 font-bold ${v.is_active ? 'text-emerald-400' : 'text-[var(--text-primary)]'}">
+                    <div class="flex items-center space-x-1.5">
+                        <span>${v.version}</span>
+                        ${v.is_active ? '<span class="soc-badge border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-[9px] py-0">ACTIVE</span>' : ''}
+                    </div>
+                </td>
+                <td class="py-3 px-4 text-[var(--text-muted)] text-xs font-sans">${v.timestamp ? v.timestamp.slice(0, 19).replace('T', ' ') : '--'}</td>
+                <td class="py-3 px-4 font-sans text-[var(--text-primary)]">${v.trigger_reason}</td>
+                <td class="py-3 px-4 text-purple-400 font-bold">+${v.cti_samples_incorporated}</td>
+                <td class="py-3 px-4 text-[var(--text-muted)]">${v.total_training_samples}</td>
+                <td class="py-3 px-4 font-mono">${(v.accuracy * 100).toFixed(1)}%</td>
+                <td class="py-3 px-4 font-mono">${(v.precision * 100).toFixed(1)}%</td>
+                <td class="py-3 px-4 font-mono">${(v.recall * 100).toFixed(1)}%</td>
+                <td class="py-3 px-4 font-mono text-emerald-400 font-bold">${(v.f1_score * 100).toFixed(1)}%</td>
+            </tr>
+        `).join('');
+    }
+
+    function renderVersionChart(versions) {
+        if (!versions || versions.length === 0) return;
+        const labels = versions.map(v => v.version);
+        const f1s = versions.map(v => (v.f1_score * 100).toFixed(1));
+        const accs = versions.map(v => (v.accuracy * 100).toFixed(1));
+
+        const theme = getChartThemeColors();
+        const ctx = document.getElementById('versionEvolutionChart').getContext('2d');
+        if (versionChart) versionChart.destroy();
+
+        versionChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'F1-Score (%)',
+                        data: f1s,
+                        borderColor: '#10B981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        fill: true,
+                        tension: 0.2,
+                        pointRadius: 5,
+                        pointBackgroundColor: '#10B981',
+                        pointHoverRadius: 7
+                    },
+                    {
+                        label: 'Accuracy (%)',
+                        data: accs,
+                        borderColor: '#6366F1',
+                        backgroundColor: 'transparent',
+                        borderDash: [5, 5],
+                        tension: 0.2,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#6366F1'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: theme.textColor,
+                            font: { family: 'Inter', size: 11, weight: '500' }
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: theme.tooltipBg,
+                        borderColor: theme.tooltipBorder,
+                        borderWidth: 1,
+                        titleColor: theme.tooltipText,
+                        bodyColor: theme.tooltipText,
+                        cornerRadius: 8
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { color: theme.gridColor },
+                        ticks: { color: theme.textColor, font: { family: 'JetBrains Mono', size: 10 } }
+                    },
+                    y: {
+                        grid: { color: theme.gridColor },
+                        ticks: { color: theme.textColor, font: { family: 'JetBrains Mono', size: 10 } },
+                        min: 80,
+                        max: 100
+                    }
+                }
+            }
+        });
+    }
+
+    async function injectDriftWave() {
+        const btn = document.getElementById('inject-drift-btn');
+        btn.disabled = true;
+        btn.innerHTML = `<i data-lucide="loader" class="w-3.5 h-3.5 mr-1.5 animate-spin"></i> Injecting...`;
+        if (window.lucide) window.lucide.createIcons();
+
+        try {
+            await fetch('/api/traffic/simulate', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ traffic_type: 'zero_day', count: 25 })
+            });
+            await loadDriftMetrics();
+            if (typeof updateNavStatus === 'function') updateNavStatus();
+            if (window.socToast) window.socToast('Drift traffic wave injected (25 zero-day flows)', 'warning');
+        } catch (e) {
+            if (window.socToast) window.socToast(`Error injecting drift wave: ${e}`, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = `<i data-lucide="wind" class="w-3.5 h-3.5 mr-1.5 text-amber-400"></i> Inject Drift Wave`;
+            if (window.lucide) window.lucide.createIcons();
+        }
+    }
+
+    async function executeRetrain() {
+        const btn = document.getElementById('manual-retrain-btn');
+        btn.innerHTML = `<i data-lucide="loader" class="w-3.5 h-3.5 mr-1.5 animate-spin"></i> Retraining Booster...`;
+        btn.disabled = true;
+        if (window.lucide) window.lucide.createIcons();
+
+        try {
+            const res = await fetch('/api/models/retrain', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ reason: 'Manual Adaptation Triggered from SOC Retraining Hub' })
+            });
+            const data = await res.json();
+            if (data.success) {
+                if (window.socToast) {
+                    window.socToast(`Model adapted to ${data.new_version} (+${data.samples_added} CTI samples, F1: ${(data.after_metrics.f1_score * 100).toFixed(1)}%)`, 'success');
+                }
+                await loadDriftMetrics();
+                if (typeof updateNavStatus === 'function') updateNavStatus();
+            } else {
+                if (window.socToast) window.socToast(data.message || 'Retraining skipped: buffer below threshold', 'warning');
+            }
+        } catch (err) {
+            if (window.socToast) window.socToast(`Retrain failed: ${err}`, 'error');
+        } finally {
+            btn.innerHTML = `<i data-lucide="refresh-cw" class="w-3.5 h-3.5 mr-1.5"></i> Retrain Booster Incrementally`;
+            btn.disabled = false;
+            if (window.lucide) window.lucide.createIcons();
+        }
+    }
+
+    // Re-render charts when theme changes
+    window.addEventListener('soc-theme-changed', () => {
+        loadDriftMetrics();
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadDriftMetrics();
+        if (window.lucide) window.lucide.createIcons();
+    });
+</script>
+{% endblock %}

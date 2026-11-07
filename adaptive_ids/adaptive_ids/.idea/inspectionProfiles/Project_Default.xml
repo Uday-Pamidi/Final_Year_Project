@@ -1,0 +1,36 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <inspection_tool class="PyPackageRequirementsInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredPackages">
+        <list>
+          <option value="fastapi" />
+          <option value="uvicorn" />
+          <option value="jinja2" />
+          <option value="python-multipart" />
+          <option value="sqlalchemy" />
+          <option value="pydantic" />
+          <option value="pydantic-settings" />
+          <option value="email-validator" />
+          <option value="passlib" />
+          <option value="bcrypt" />
+          <option value="python-jose" />
+          <option value="pandas" />
+          <option value="numpy" />
+          <option value="scikit-learn" />
+          <option value="joblib" />
+          <option value="scipy" />
+          <option value="torch" />
+          <option value="websockets" />
+          <option value="python-dotenv" />
+          <option value="openpyxl" />
+          <option value="pyarrow" />
+          <option value="alembic" />
+          <option value="httpx" />
+          <option value="pytest" />
+          <option value="supabase" />
+        </list>
+      </option>
+    </inspection_tool>
+  </profile>
+</component>

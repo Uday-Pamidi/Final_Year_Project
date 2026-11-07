@@ -1,0 +1,432 @@
+{% extends "base.html" %}
+
+{% block title %}CTI Transfer Hub{% endblock %}
+{% block breadcrumb %}Threat Intelligence{% endblock %}
+{% block page_title %}Cyber Threat Intelligence & Transfer Hub{% endblock %}
+{% block page_subtitle %}Translating external threat feeds and correlating network telemetry into validated training vectors (Lin et al. IEEE TMLCN 2025).{% endblock %}
+
+{% block header_actions %}
+<div class="flex items-center space-x-2">
+    <button onclick="openAddSigModal()" class="soc-btn-secondary text-xs">
+        <i data-lucide="plus" class="w-3.5 h-3.5 text-purple-400"></i>
+        <span>Add Threat Signature</span>
+    </button>
+    <button onclick="loadCTIData()" class="soc-btn-primary text-xs">
+        <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+        <span>Refresh CTI Feeds</span>
+    </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- ========================================================================
+         1. THREAT INTEL SOURCE STATUS CARDS
+         ======================================================================== -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 font-mono text-xs">
+        <!-- Feed 1: AlienVault OTX -->
+        <div class="soc-card p-4 space-y-3 border-purple-500/20">
+            <div class="flex items-center justify-between">
+                <span class="text-[10px] text-[var(--text-muted)] font-bold">SOURCE 01</span>
+                <span class="soc-badge soc-badge-safe">SYNCED</span>
+            </div>
+            <div>
+                <h4 class="text-sm font-bold text-[var(--text-primary)] font-sans">AlienVault OTX</h4>
+                <p class="text-[11px] text-[var(--text-secondary)] font-sans mt-0.5">Open Threat Exchange pulses & actor reputations.</p>
+            </div>
+            <div class="text-[10px] text-[var(--text-muted)] pt-2 border-t border-[var(--border-subtle)] flex justify-between">
+                <span>Active Pulses: <strong>14.2k</strong></span>
+                <span>Latency: <strong>24ms</strong></span>
+            </div>
+        </div>
+
+        <!-- Feed 2: AbuseIPDB -->
+        <div class="soc-card p-4 space-y-3 border-purple-500/20">
+            <div class="flex items-center justify-between">
+                <span class="text-[10px] text-[var(--text-muted)] font-bold">SOURCE 02</span>
+                <span class="soc-badge soc-badge-safe">LIVE</span>
+            </div>
+            <div>
+                <h4 class="text-sm font-bold text-[var(--text-primary)] font-sans">AbuseIPDB Global</h4>
+                <p class="text-[11px] text-[var(--text-secondary)] font-sans mt-0.5">Crowdsourced malicious IP reports & abuse confidence.</p>
+            </div>
+            <div class="text-[10px] text-[var(--text-muted)] pt-2 border-t border-[var(--border-subtle)] flex justify-between">
+                <span>Blacklisted: <strong>185k</strong></span>
+                <span>Confidence: <strong>96%</strong></span>
+            </div>
+        </div>
+
+        <!-- Feed 3: MISP -->
+        <div class="soc-card p-4 space-y-3 border-purple-500/20">
+            <div class="flex items-center justify-between">
+                <span class="text-[10px] text-[var(--text-muted)] font-bold">SOURCE 03</span>
+                <span class="soc-badge soc-badge-safe">POLLING</span>
+            </div>
+            <div>
+                <h4 class="text-sm font-bold text-[var(--text-primary)] font-sans">MISP Threat Sharing</h4>
+                <p class="text-[11px] text-[var(--text-secondary)] font-sans mt-0.5">Structured STIX/TAXII malware & APT indicators.</p>
+            </div>
+            <div class="text-[10px] text-[var(--text-muted)] pt-2 border-t border-[var(--border-subtle)] flex justify-between">
+                <span>Events: <strong>8,940</strong></span>
+                <span>Sync: <strong>Every 5m</strong></span>
+            </div>
+        </div>
+
+        <!-- Feed 4: Honeypot Telemetry -->
+        <div class="soc-card p-4 space-y-3 border-purple-500/20">
+            <div class="flex items-center justify-between">
+                <span class="text-[10px] text-[var(--text-muted)] font-bold">SOURCE 04</span>
+                <span class="soc-badge soc-badge-safe">INTERNAL</span>
+            </div>
+            <div>
+                <h4 class="text-sm font-bold text-[var(--text-primary)] font-sans">Sensor Honeypots</h4>
+                <p class="text-[11px] text-[var(--text-secondary)] font-sans mt-0.5">High-interaction internal traps capturing novel probes.</p>
+            </div>
+            <div class="text-[10px] text-[var(--text-muted)] pt-2 border-t border-[var(--border-subtle)] flex justify-between">
+                <span>Sightings: <strong>1,240/hr</strong></span>
+                <span>Trap Nodes: <strong>8</strong></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================================
+         2. VALIDATED RETRAINING BUFFER CARD WITH FORMULA
+         ======================================================================== -->
+    <div class="soc-card p-6 space-y-6">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+                <div class="flex items-center space-x-2">
+                    <span class="soc-badge soc-badge-purple">CTI Transfer Model</span>
+                    <span class="text-xs font-mono text-[var(--text-muted)]">Ground-Truth Synthesis</span>
+                </div>
+                <h3 class="text-lg font-bold text-[var(--text-primary)] tracking-tight mt-1">
+                    Validated Ground-Truth Sample Buffer (Pending Retrain)
+                </h3>
+                <p class="text-xs text-[var(--text-secondary)]">
+                    Network flows correlated with external CTI reports meeting the verification threshold (&ge; 0.75). When buffer reaches 25 samples, incremental model adaptation triggers automatically.
+                </p>
+            </div>
+
+            <!-- Saturation Progress -->
+            <div class="flex items-center space-x-4 bg-[var(--bg-elevated)] p-4 rounded-xl border border-[var(--border-subtle)] shrink-0 font-mono">
+                <div>
+                    <div class="text-[10px] text-[var(--text-muted)] uppercase">Buffer Saturation</div>
+                    <div id="buffer-stat-text" class="text-lg font-black text-purple-400">0 / 25 Samples</div>
+                </div>
+                <div class="w-36 bg-[var(--bg-base)] rounded-full h-3 overflow-hidden border border-[var(--border-subtle)]">
+                    <div id="buffer-progress-bar" class="h-full bg-gradient-to-r from-purple-500 to-indigo-500 transition-all duration-300" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CTI Transfer Correlation Formula Card -->
+        <div class="p-4 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-subtle)] space-y-2">
+            <span class="text-[10px] font-mono font-bold text-indigo-400 uppercase tracking-widest block">Transfer Model Correlation Formula (Lin et al. 2025)</span>
+            <div class="font-mono text-xs text-[var(--text-primary)]">
+                Correlation Score = 0.40 &times; CTI_Confidence + 0.35 &times; (Threat_Score / 100) + 0.25 &times; Telemetry_Consistency
+            </div>
+            <p class="text-[11px] text-[var(--text-muted)] font-sans">
+                When Score &ge; 0.75, the flow is converted into a verified training instance with labels synchronized to the IDS feature space.
+            </p>
+        </div>
+
+        <!-- Validated Samples Table -->
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs font-mono">
+                <thead class="bg-[var(--bg-elevated)] text-[var(--text-muted)] uppercase text-[10px] tracking-wider border-b border-[var(--border-subtle)]">
+                    <tr>
+                        <th class="py-3 px-4">Flow Reference</th>
+                        <th class="py-3 px-4">Extracted IoC Indicator</th>
+                        <th class="py-3 px-4">Validated Label</th>
+                        <th class="py-3 px-4">Correlation Score</th>
+                        <th class="py-3 px-4">CTI Threat Score</th>
+                        <th class="py-3 px-4">Ingestion Timestamp</th>
+                    </tr>
+                </thead>
+                <tbody id="validated-buffer-body" class="divide-y divide-[var(--border-subtle)] text-[var(--text-secondary)]">
+                    <tr>
+                        <td colspan="6" class="py-6 text-center text-[var(--text-muted)] font-sans">
+                            Loading validated CTI training buffer...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ========================================================================
+         3. LIVE IOC LOOKUP & REPOSITORY GRID
+         ======================================================================== -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Interactive IoC Tester -->
+        <div class="soc-card p-6 space-y-4">
+            <div>
+                <h3 class="text-sm font-bold text-[var(--text-primary)] flex items-center space-x-2">
+                    <i data-lucide="search" class="w-4 h-4 text-indigo-400"></i>
+                    <span>Live IoC Threat Intel Lookup</span>
+                </h3>
+                <p class="text-xs text-[var(--text-secondary)] mt-0.5">Test any IP, port, or entropy against active threat signatures.</p>
+            </div>
+
+            <form onsubmit="queryCTI(event)" class="space-y-3 text-xs font-mono">
+                <div>
+                    <label class="text-[var(--text-muted)] block mb-1">Indicator Value</label>
+                    <input type="text" id="lookup-ioc" value="198.51.100.42" class="w-full bg-[var(--bg-elevated)] border border-[var(--border-subtle)] rounded-lg p-2 text-[var(--text-primary)]">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="text-[var(--text-muted)] block mb-1">Type</label>
+                        <select id="lookup-type" class="w-full bg-[var(--bg-elevated)] border border-[var(--border-subtle)] rounded-lg p-2 text-[var(--text-primary)]">
+                            <option value="IP">Source IP</option>
+                            <option value="Port">Target Port</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[var(--text-muted)] block mb-1">Payload Entropy</label>
+                        <input type="number" step="0.1" id="lookup-entropy" value="7.2" class="w-full bg-[var(--bg-elevated)] border border-[var(--border-subtle)] rounded-lg p-2 text-[var(--text-primary)]">
+                    </div>
+                </div>
+                <button type="submit" class="soc-btn-primary w-full text-xs py-2">
+                    <i data-lucide="search" class="w-3.5 h-3.5"></i>
+                    <span>Query Repositories</span>
+                </button>
+            </form>
+
+            <div id="lookup-result-box" class="hidden mt-4 p-4 rounded-xl border text-xs font-mono space-y-2"></div>
+        </div>
+
+        <!-- Global CTI Signatures Table -->
+        <div class="soc-card p-6 lg:col-span-2 space-y-4">
+            <div>
+                <h3 class="text-sm font-bold text-[var(--text-primary)] flex items-center space-x-2">
+                    <i data-lucide="shield-alert" class="w-4 h-4 text-purple-400"></i>
+                    <span>Active CTI Threat Signatures Repository</span>
+                </h3>
+                <p class="text-xs text-[var(--text-secondary)] mt-0.5">Intelligence records used by the CTI Transfer Model for telemetry correlation</p>
+            </div>
+
+            <div class="overflow-x-auto max-h-96">
+                <table class="w-full text-left text-xs font-mono">
+                    <thead class="bg-[var(--bg-elevated)] text-[var(--text-muted)] uppercase text-[10px] tracking-wider border-b border-[var(--border-subtle)] sticky top-0">
+                        <tr>
+                            <th class="py-2.5 px-3">Indicator</th>
+                            <th class="py-2.5 px-3">Malware / Actor</th>
+                            <th class="py-2.5 px-3">Category</th>
+                            <th class="py-2.5 px-3">Threat Score</th>
+                            <th class="py-2.5 px-3">Feed Sources</th>
+                        </tr>
+                    </thead>
+                    <tbody id="signatures-table-body" class="divide-y divide-[var(--border-subtle)] text-[var(--text-secondary)]"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Modal: Add Signature -->
+<div id="add-sig-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div class="soc-card max-w-lg w-full p-6 shadow-2xl space-y-4">
+        <div class="flex items-center justify-between pb-3 border-b border-[var(--border-subtle)]">
+            <h3 class="text-base font-bold text-[var(--text-primary)] flex items-center space-x-2">
+                <i data-lucide="plus" class="w-4 h-4 text-purple-400"></i>
+                <span>Add Threat Intelligence Signature</span>
+            </h3>
+            <button onclick="closeModal('add-sig-modal')" class="text-[var(--text-muted)] hover:text-[var(--text-primary)]">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+
+        <form onsubmit="submitNewSignature(event)" class="space-y-3 text-xs font-mono">
+            <div>
+                <label class="text-[var(--text-muted)] block mb-1">Indicator Value (IP or Port)</label>
+                <input type="text" id="sig-ioc" required placeholder="e.g. 198.51.100.99" class="w-full bg-[var(--bg-elevated)] border border-[var(--border-subtle)] rounded p-2 text-[var(--text-primary)]">
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="text-[var(--text-muted)] block mb-1">Threat Score (0-100)</label>
+                    <input type="number" id="sig-score" min="0" max="100" value="95" class="w-full bg-[var(--bg-elevated)] border border-[var(--border-subtle)] rounded p-2 text-[var(--text-primary)]">
+                </div>
+                <div>
+                    <label class="text-[var(--text-muted)] block mb-1">Severity Level</label>
+                    <select id="sig-level" class="w-full bg-[var(--bg-elevated)] border border-[var(--border-subtle)] rounded p-2 text-[var(--text-primary)]">
+                        <option value="Critical">Critical</option>
+                        <option value="High">High</option>
+                        <option value="Medium">Medium</option>
+                    </select>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="text-[var(--text-muted)] block mb-1">Malware Family / Actor</label>
+                    <input type="text" id="sig-family" value="Evolving_C2_Trojan" class="w-full bg-[var(--bg-elevated)] border border-[var(--border-subtle)] rounded p-2 text-[var(--text-primary)]">
+                </div>
+                <div>
+                    <label class="text-[var(--text-muted)] block mb-1">Attack Category</label>
+                    <select id="sig-cat" class="w-full bg-[var(--bg-elevated)] border border-[var(--border-subtle)] rounded p-2 text-[var(--text-primary)]">
+                        <option value="Botnet_C2">Botnet C2</option>
+                        <option value="DoS_DDoS">DoS / DDoS</option>
+                        <option value="PortScan">PortScan</option>
+                        <option value="BruteForce">BruteForce</option>
+                        <option value="Infiltration_Web">Infiltration Web</option>
+                    </select>
+                </div>
+            </div>
+            <div>
+                <label class="text-[var(--text-muted)] block mb-1">Threat Description</label>
+                <textarea id="sig-desc" rows="2" class="w-full bg-[var(--bg-elevated)] border border-[var(--border-subtle)] rounded p-2 text-[var(--text-primary)] font-sans">Active command-and-control beaconing endpoint verified by threat hunters.</textarea>
+            </div>
+            <div class="flex justify-end space-x-2 pt-2 border-t border-[var(--border-subtle)]">
+                <button type="button" onclick="closeModal('add-sig-modal')" class="soc-btn-secondary text-xs">Cancel</button>
+                <button type="submit" class="soc-btn-primary text-xs">Save Signature</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    async function loadCTIData() {
+        try {
+            const bufRes = await fetch('/api/cti/validated_buffer');
+            if (bufRes.ok) {
+                const bufData = await bufRes.json();
+                renderValidatedBuffer(bufData);
+            }
+
+            const sigRes = await fetch('/api/cti/signatures');
+            if (sigRes.ok) {
+                const sigs = await sigRes.json();
+                renderSignatures(sigs);
+            }
+        } catch (e) {
+            console.error("CTI load error:", e);
+        }
+    }
+
+    function renderValidatedBuffer(data) {
+        const count = data.pending_count;
+        const threshold = data.threshold;
+        const pct = Math.min(100, Math.round((count / threshold) * 100));
+
+        document.getElementById('buffer-stat-text').innerText = `${count} / ${threshold} Samples`;
+        document.getElementById('buffer-progress-bar').style.width = `${pct}%`;
+
+        const tbody = document.getElementById('validated-buffer-body');
+        if (!data.samples || data.samples.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-[var(--text-muted)] font-sans">No pending validated CTI samples. Samples accumulate when anomalous traffic correlates with threat feeds.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = data.samples.map(s => `
+            <tr class="hover:bg-[var(--bg-hover)] transition">
+                <td class="py-3 px-4 text-indigo-400 font-bold">${s.flow_id}</td>
+                <td class="py-3 px-4">${s.ioc_value || 'Telemetry Sighting'}</td>
+                <td class="py-3 px-4"><span class="soc-badge soc-badge-purple">${s.validated_label}</span></td>
+                <td class="py-3 px-4 text-emerald-400 font-bold">${(s.correlation_confidence * 100).toFixed(1)}%</td>
+                <td class="py-3 px-4">${s.cti_threat_score} / 100</td>
+                <td class="py-3 px-4 text-[var(--text-muted)] text-[10px]">${s.timestamp.slice(0, 19).replace('T', ' ')}</td>
+            </tr>
+        `).join('');
+    }
+
+    function renderSignatures(sigs) {
+        const tbody = document.getElementById('signatures-table-body');
+        if (!sigs || sigs.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-[var(--text-muted)] font-sans">No threat signatures found.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = sigs.map(s => {
+            const scoreColor = s.threat_score >= 90 ? 'text-rose-400' : 'text-amber-400';
+            return `
+                <tr class="hover:bg-[var(--bg-hover)] transition">
+                    <td class="py-2.5 px-3 text-indigo-400 font-bold">${s.ioc_value}</td>
+                    <td class="py-2.5 px-3">${s.malware_family}</td>
+                    <td class="py-2.5 px-3"><span class="soc-badge soc-badge-info">${s.attack_category}</span></td>
+                    <td class="py-2.5 px-3 font-bold ${scoreColor}">${s.threat_score}/100</td>
+                    <td class="py-2.5 px-3 text-[var(--text-muted)] text-[10px] truncate max-w-xs font-sans" title="${s.sources.join(', ')}">${s.sources.join(', ')}</td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    async function queryCTI(e) {
+        e.preventDefault();
+        const ioc = document.getElementById('lookup-ioc').value;
+        const type = document.getElementById('lookup-type').value;
+        const entropy = parseFloat(document.getElementById('lookup-entropy').value);
+        const resBox = document.getElementById('lookup-result-box');
+
+        try {
+            const res = await fetch('/api/cti/query', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ ioc_value: ioc, ioc_type: type, payload_entropy: entropy })
+            });
+            const data = await res.json();
+            resBox.classList.remove('hidden');
+
+            if (data.found) {
+                const rep = data.report;
+                resBox.className = 'mt-4 p-4 rounded-xl border border-purple-500/30 bg-purple-500/10 text-xs font-mono space-y-1.5';
+                resBox.innerHTML = `
+                    <div class="flex items-center justify-between text-purple-400 font-bold">
+                        <span>Threat Intelligence Match Found</span>
+                        <span>Threat Score: ${rep.threat_score}/100</span>
+                    </div>
+                    <div><strong>Malware Family:</strong> ${rep.malware_family}</div>
+                    <div><strong>Attack Category:</strong> ${rep.attack_category}</div>
+                    <div><strong>Confidence:</strong> ${(rep.confidence * 100).toFixed(1)}%</div>
+                    <div class="text-[var(--text-secondary)] font-sans mt-1"><strong>Description:</strong> ${rep.description}</div>
+                    <div class="text-[10px] text-[var(--text-muted)] font-sans">Sources: ${rep.sources.join(', ')}</div>
+                `;
+                showToast(`CTI match found for ${ioc} (${rep.malware_family})`, 'success');
+            } else {
+                resBox.className = 'mt-4 p-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)] text-xs font-sans text-[var(--text-muted)]';
+                resBox.innerHTML = `<div>No intelligence record found for '${ioc}'. Flow will be treated as unknown anomaly if flagged by Isolation Forest.</div>`;
+                showToast(`No match in CTI repository for ${ioc}`, 'info');
+            }
+        } catch (err) {
+            showToast(`Query error: ${err}`, 'error');
+        }
+    }
+
+    function openAddSigModal() { document.getElementById('add-sig-modal').classList.remove('hidden'); }
+    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+    async function submitNewSignature(e) {
+        e.preventDefault();
+        const sig = {
+            ioc_value: document.getElementById('sig-ioc').value,
+            threat_score: parseInt(document.getElementById('sig-score').value),
+            threat_level: document.getElementById('sig-level').value,
+            malware_family: document.getElementById('sig-family').value,
+            attack_category: document.getElementById('sig-cat').value,
+            confidence: 0.95,
+            description: document.getElementById('sig-desc').value,
+            sources: ['SOC Analyst Manual Verification']
+        };
+
+        try {
+            const res = await fetch('/api/cti/add_signature', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(sig)
+            });
+            const data = await res.json();
+            if (data.success) {
+                closeModal('add-sig-modal');
+                showToast(`Signature '${sig.ioc_value}' successfully registered in CTI feed`, 'success');
+                await loadCTIData();
+            }
+        } catch (err) {
+            showToast(`Failed to add signature: ${err}`, 'error');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadCTIData);
+</script>
+{% endblock %}

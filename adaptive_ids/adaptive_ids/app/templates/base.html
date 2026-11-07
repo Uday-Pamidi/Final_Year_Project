@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Enterprise SOC{% endblock %} | DICI Sentinel Adaptive IDS</title>
+    
+    <!-- Theme Flash Prevention -->
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('dici-theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        })();
+    </script>
+
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: ['class', '[data-theme="dark"]'],
+            theme: {
+                extend: {
+                    colors: {
+                        soc: {
+                            base: 'var(--bg-base)',
+                            surface: 'var(--bg-surface)',
+                            elevated: 'var(--bg-elevated)',
+                            hover: 'var(--bg-hover)',
+                            border: 'var(--border-subtle)',
+                            primary: 'var(--accent-primary)',
+                            accent: 'var(--accent-secondary)'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Alpine.js CDN -->
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <!-- Enterprise SOC CSS System -->
+    <link rel="stylesheet" href="/static/css/custom.css">
+</head>
+<body class="bg-soc-base text-[var(--text-primary)] font-sans min-h-screen flex flex-col antialiased selection:bg-indigo-500/20 selection:text-indigo-400" x-data="{ sidebarOpen: false, sidebarCollapsed: false }">
+
+    <div class="flex min-h-screen w-full">
+
+        <!-- ========================================================================
+             LEFT COLLAPSIBLE SIDEBAR
+             ======================================================================== -->
+        <aside 
+            :class="{
+                'w-64': !sidebarCollapsed,
+                'w-20': sidebarCollapsed,
+                '-translate-x-full lg:translate-x-0': !sidebarOpen,
+                'translate-x-0': sidebarOpen
+            }"
+            class="fixed lg:sticky top-0 left-0 h-screen bg-[var(--bg-surface)] border-r border-[var(--border-subtle)] z-40 flex flex-col transition-all duration-300 ease-in-out shrink-0 select-none shadow-xl lg:shadow-none"
+        >
+            <!-- Logo Section -->
+            <div class="h-16 flex items-center justify-between px-4 border-b border-[var(--border-subtle)]">
+                <a href="/dashboard" class="flex items-center space-x-3 overflow-hidden group">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#4F7CFF] to-[#7C5CFF] flex items-center justify-center text-white shrink-0 shadow-lg shadow-indigo-500/20 group-hover:scale-105 transition-transform">
+                        <i data-lucide="shield-alert" class="w-5 h-5"></i>
+                    </div>
+                    <div class="flex flex-col truncate" x-show="!sidebarCollapsed" x-transition>
+                        <span class="font-extrabold tracking-tight text-sm text-[var(--text-primary)] flex items-center gap-1.5">
+                            DICI SENTINEL
+                            <span class="text-[9px] bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 px-1 py-0.2 rounded font-mono font-semibold">SOC</span>
+                        </span>
+                        <span class="text-[10px] text-[var(--text-muted)] font-mono truncate">Executive Console</span>
+                    </div>
+                </a>
+                <button 
+                    @click="sidebarCollapsed = !sidebarCollapsed"
+                    class="hidden lg:flex w-7 h-7 rounded-lg items-center justify-center text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition"
+                    title="Collapse Sidebar"
+                >
+                    <i :data-lucide="sidebarCollapsed ? 'chevron-right' : 'chevron-left'" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <!-- Navigation Links (Grouped) -->
+            <div class="flex-1 overflow-y-auto px-3 py-4 space-y-6">
+                <!-- Group: Core -->
+                <div>
+                    <div class="text-[10px] uppercase font-mono font-bold tracking-wider text-[var(--text-muted)] px-3 mb-2" x-show="!sidebarCollapsed">
+                        Operations Console
+                    </div>
+                    <nav class="space-y-1">
+                        <a href="/" class="soc-nav-item text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10" :title="sidebarCollapsed ? 'Exit to Public Home' : ''">
+                            <i data-lucide="arrow-left" class="w-4 h-4 shrink-0 text-indigo-400"></i>
+                            <span x-show="!sidebarCollapsed" class="truncate font-semibold">Exit to Public Home</span>
+                        </a>
+                        <a href="/dashboard" class="soc-nav-item {% if active_page == 'dashboard' %}active{% endif %}" :title="sidebarCollapsed ? 'Executive SOC' : ''">
+                            <i data-lucide="layout-dashboard" class="w-4 h-4 shrink-0"></i>
+                            <span x-show="!sidebarCollapsed" class="truncate font-semibold">Executive Dashboard</span>
+                        </a>
+                    </nav>
+                </div>
+
+                <!-- Group: Detection & Telemetry -->
+                <div>
+                    <div class="text-[10px] uppercase font-mono font-bold tracking-wider text-[var(--text-muted)] px-3 mb-2" x-show="!sidebarCollapsed">
+                        Detection & Telemetry
+                    </div>
+                    <nav class="space-y-1">
+                        <a href="/live" class="soc-nav-item {% if active_page == 'live' %}active{% endif %}" :title="sidebarCollapsed ? 'Flow Inspector' : ''">
+                            <i data-lucide="activity" class="w-4 h-4 shrink-0"></i>
+                            <span x-show="!sidebarCollapsed" class="truncate">Flow Inspector</span>
+                            <span x-show="!sidebarCollapsed" class="ml-auto text-[9px] font-mono bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded-full font-bold">LIVE</span>
+                        </a>
+                    </nav>
+                </div>
+
+                <!-- Group: Intelligence & Correlation -->
+                <div>
+                    <div class="text-[10px] uppercase font-mono font-bold tracking-wider text-[var(--text-muted)] px-3 mb-2" x-show="!sidebarCollapsed">
+                        Cyber Threat Intelligence
+                    </div>
+                    <nav class="space-y-1">
+                        <a href="/cti" class="soc-nav-item {% if active_page == 'cti' %}active{% endif %}" :title="sidebarCollapsed ? 'CTI Transfer Hub' : ''">
+                            <i data-lucide="fingerprint" class="w-4 h-4 shrink-0"></i>
+                            <span x-show="!sidebarCollapsed" class="truncate">CTI Transfer Hub</span>
+                            <span id="sidebar-cti-badge" x-show="!sidebarCollapsed" class="ml-auto text-[9px] font-mono bg-purple-500/15 text-purple-400 border border-purple-500/30 px-1.5 py-0.5 rounded-full font-bold">0/25</span>
+                        </a>
+                    </nav>
+                </div>
+
+                <!-- Group: Model Operations -->
+                <div>
+                    <div class="text-[10px] uppercase font-mono font-bold tracking-wider text-[var(--text-muted)] px-3 mb-2" x-show="!sidebarCollapsed">
+                        Model Operations
+                    </div>
+                    <nav class="space-y-1">
+                        <a href="/drift" class="soc-nav-item {% if active_page == 'drift' %}active{% endif %}" :title="sidebarCollapsed ? 'Concept Drift' : ''">
+                            <i data-lucide="git-branch" class="w-4 h-4 shrink-0"></i>
+                            <span x-show="!sidebarCollapsed" class="truncate">Drift & Retraining</span>
+                            <span id="sidebar-drift-dot" class="w-2 h-2 rounded-full bg-emerald-400 ml-auto" x-show="!sidebarCollapsed"></span>
+                        </a>
+                    </nav>
+                </div>
+
+                <!-- Group: Explainability -->
+                <div>
+                    <div class="text-[10px] uppercase font-mono font-bold tracking-wider text-[var(--text-muted)] px-3 mb-2" x-show="!sidebarCollapsed">
+                        Explainable AI (XAI)
+                    </div>
+                    <nav class="space-y-1">
+                        <a href="/explain" class="soc-nav-item {% if active_page == 'explain' %}active{% endif %}" :title="sidebarCollapsed ? 'SHAP Studio' : ''">
+                            <i data-lucide="brain-circuit" class="w-4 h-4 shrink-0"></i>
+                            <span x-show="!sidebarCollapsed" class="truncate">SHAP XAI Studio</span>
+                        </a>
+                    </nav>
+                </div>
+
+                <!-- Group: Architecture & Specs -->
+                <div>
+                    <div class="text-[10px] uppercase font-mono font-bold tracking-wider text-[var(--text-muted)] px-3 mb-2" x-show="!sidebarCollapsed">
+                        Reference
+                    </div>
+                    <nav class="space-y-1">
+                        <a href="/docs-view" class="soc-nav-item {% if active_page == 'docs' %}active{% endif %}" :title="sidebarCollapsed ? 'Paper & Architecture' : ''">
+                            <i data-lucide="book-open" class="w-4 h-4 shrink-0"></i>
+                            <span x-show="!sidebarCollapsed" class="truncate">Paper & Architecture</span>
+                        </a>
+                        <a href="/docs" target="_blank" class="soc-nav-item" :title="sidebarCollapsed ? 'OpenAPI REST Docs' : ''">
+                            <i data-lucide="terminal" class="w-4 h-4 shrink-0"></i>
+                            <span x-show="!sidebarCollapsed" class="truncate">REST API Specs</span>
+                            <i data-lucide="external-link" class="w-3 h-3 ml-auto text-[var(--text-muted)]" x-show="!sidebarCollapsed"></i>
+                        </a>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- Bottom System Status Card -->
+            <div class="p-3 border-t border-[var(--border-subtle)] bg-[var(--bg-elevated)]/60" x-show="!sidebarCollapsed" x-transition>
+                <div class="flex items-center justify-between text-xs mb-1.5">
+                    <div class="flex items-center space-x-1.5 font-mono text-[11px] font-semibold text-[var(--text-primary)]">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse-dot"></span>
+                        <span>DICI ENGINE</span>
+                    </div>
+                    <span class="text-[10px] text-emerald-400 font-mono font-bold">ONLINE</span>
+                </div>
+                <div class="grid grid-cols-2 gap-1.5 text-[10px] font-mono text-[var(--text-muted)] pt-1 border-t border-[var(--border-subtle)]">
+                    <div>Model: <span id="sidebar-model-ver" class="text-[var(--text-primary)] font-bold">v1.0</span></div>
+                    <div>Latency: <span class="text-emerald-400 font-bold">0.8ms</span></div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Mobile Backdrop -->
+        <div 
+            x-show="sidebarOpen" 
+            @click="sidebarOpen = false" 
+            class="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 lg:hidden"
+            x-transition:enter="transition-opacity ease-out duration-200"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="transition-opacity ease-in duration-150"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+        ></div>
+
+        <!-- ========================================================================
+             RIGHT MAIN WRAPPER
+             ======================================================================== -->
+        <div class="flex-1 flex flex-col min-w-0">
+
+            <!-- Top Enterprise Bar -->
+            <header class="h-16 bg-[var(--bg-surface)] border-b border-[var(--border-subtle)] sticky top-0 z-30 flex items-center justify-between px-4 sm:px-8 shadow-sm">
+                <!-- Left: Mobile Toggle & Global Search -->
+                <div class="flex items-center space-x-3 sm:space-x-4 flex-1 max-w-lg">
+                    <button 
+                        @click="sidebarOpen = !sidebarOpen" 
+                        class="lg:hidden p-2 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
+                    >
+                        <i data-lucide="menu" class="w-5 h-5"></i>
+                    </button>
+
+                    <!-- Global Search -->
+                    <div class="relative w-full max-w-md hidden sm:block">
+                        <i data-lucide="search" class="w-4 h-4 absolute left-3 top-2.5 text-[var(--text-muted)]"></i>
+                        <input 
+                            type="text" 
+                            id="global-search-input"
+                            placeholder="Search IP, flow hash, CVE, or classification... (Ctrl + K)"
+                            class="w-full bg-[var(--bg-elevated)] border border-[var(--border-subtle)] rounded-lg pl-9 pr-14 py-1.5 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-primary)] font-mono transition"
+                            @keydown.window.prevent.ctrl.k="document.getElementById('global-search-input').focus()"
+                        >
+                        <kbd class="absolute right-2.5 top-2 text-[9px] bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--text-muted)] px-1.5 py-0.5 rounded font-mono">⌘K</kbd>
+                    </div>
+                </div>
+
+                <!-- Right: Status Indicators & Quick Actions -->
+                <div class="flex items-center space-x-2.5 sm:space-x-4">
+                    <!-- Environment Badge -->
+                    <span class="hidden md:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 animate-pulse"></span>
+                        PROD
+                    </span>
+
+                    <!-- Live System Clock -->
+                    <div class="hidden xl:flex items-center space-x-1.5 text-xs font-mono text-[var(--text-muted)] bg-[var(--bg-elevated)] px-2.5 py-1 rounded-lg border border-[var(--border-subtle)]">
+                        <i data-lucide="clock" class="w-3.5 h-3.5 text-indigo-400"></i>
+                        <span id="live-clock">UTC 00:00:00</span>
+                    </div>
+
+                    <!-- Theme Toggle Button (Dark / Light) -->
+                    <button 
+                        id="theme-toggle-btn"
+                        onclick="toggleSOCTheme()"
+                        class="p-2 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] border border-[var(--border-subtle)] transition"
+                        title="Toggle Dark / Light Theme"
+                    >
+                        <i id="theme-toggle-icon" data-lucide="sun" class="w-4 h-4"></i>
+                    </button>
+
+                    <!-- Notifications Dropdown -->
+                    <div class="relative" x-data="{ open: false }">
+                        <button 
+                            @click="open = !open" 
+                            class="relative p-2 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] border border-[var(--border-subtle)] transition"
+                            title="System Notifications"
+                        >
+                            <i data-lucide="bell" class="w-4 h-4"></i>
+                            <span id="notif-badge" class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+                        </button>
+                        <div 
+                            x-show="open" 
+                            @click.away="open = false" 
+                            x-transition 
+                            class="absolute right-0 mt-2 w-80 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl shadow-2xl p-3 z-50 text-xs"
+                        >
+                            <div class="flex items-center justify-between pb-2 border-b border-[var(--border-subtle)] mb-2 font-bold text-[var(--text-primary)]">
+                                <span>Security Notifications</span>
+                                <span class="text-[10px] text-indigo-400 font-mono">Live Feeds</span>
+                            </div>
+                            <div class="space-y-2 text-[var(--text-secondary)]" id="notif-list">
+                                <div class="p-2 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-subtle)]">
+                                    <div class="text-[var(--text-primary)] font-semibold flex items-center justify-between">
+                                        <span>Autonomous Model Ready</span>
+                                        <span class="text-[9px] text-[var(--text-muted)] font-mono">Just Now</span>
+                                    </div>
+                                    <p class="text-[11px] text-[var(--text-muted)] mt-0.5">XGBoost & Isolation Forest initialized on CIC-IDS telemetry.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Direct Quick Retrain Action -->
+                    <button 
+                        onclick="triggerImmediateRetrain()"
+                        class="hidden sm:inline-flex soc-btn-secondary text-xs py-1.5 px-3 font-mono font-medium"
+                        title="Perform Incremental Booster Update"
+                    >
+                        <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-indigo-400"></i>
+                        <span>Retrain Booster</span>
+                    </button>
+
+                    <!-- User Profile Avatar -->
+                    <div class="flex items-center space-x-2 pl-2 border-l border-[var(--border-subtle)]">
+                        <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-600 to-purple-600 text-white font-bold text-xs flex items-center justify-center shadow-md">
+                            SC
+                        </div>
+                        <div class="hidden 2xl:block text-left text-xs font-mono leading-tight">
+                            <span class="text-[var(--text-primary)] font-bold block truncate">SecOps Lead</span>
+                            <span class="text-[10px] text-[var(--text-muted)]">Tier-3 Command</span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Global Floating Alert Banner -->
+            <div id="retrain-alert-banner" class="hidden bg-gradient-to-r from-amber-500/15 via-rose-500/15 to-purple-500/15 border-b border-amber-500/30 px-4 sm:px-8 py-2.5">
+                <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs">
+                    <div class="flex items-center space-x-2 text-[var(--text-primary)]">
+                        <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-400 shrink-0 animate-bounce"></i>
+                        <span id="retrain-alert-message" class="font-medium">Concept Drift or CTI Threshold Reached: Dynamic adaptation recommended.</span>
+                    </div>
+                    <button onclick="triggerImmediateRetrain()" class="soc-btn-primary text-xs py-1 px-3">
+                        <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                        <span>Retrain Model Now</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Page Container -->
+            <main class="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+                <!-- Breadcrumbs & Header Block -->
+                {% block page_header %}
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-2">
+                    <div class="space-y-1">
+                        <div class="flex items-center space-x-2 text-xs text-[var(--text-muted)] font-mono">
+                            <a href="/" class="hover:text-[var(--accent-primary)] transition">Sentinel</a>
+                            <span>/</span>
+                            <span class="text-[var(--text-secondary)] font-semibold uppercase">{% block breadcrumb %}SOC Overview{% endblock %}</span>
+                        </div>
+                        <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-[var(--text-primary)]">
+                            {% block page_title %}Security Operations Center{% endblock %}
+                        </h1>
+                        <p class="text-xs sm:text-sm text-[var(--text-secondary)]">
+                            {% block page_subtitle %}Autonomous Machine Learning Intrusion Detection and Cyber Threat Intelligence.{% endblock %}
+                        </p>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        {% block header_actions %}{% endblock %}
+                    </div>
+                </div>
+                {% endblock %}
+
+                <!-- Content Slot -->
+                {% block content %}{% endblock %}
+            </main>
+
+            <!-- Enterprise Footer -->
+            <footer class="bg-[var(--bg-surface)] border-t border-[var(--border-subtle)] py-4 text-xs text-[var(--text-muted)] font-mono mt-auto">
+                <div class="max-w-7xl mx-auto px-4 sm:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div class="flex items-center space-x-2">
+                        <span class="font-bold text-[var(--text-primary)]">DICI Sentinel IDS</span>
+                        <span>&bull;</span>
+                        <span>IEEE Transactions on Machine Learning in Communications and Networking (2025)</span>
+                    </div>
+                    <div class="flex items-center space-x-4 text-[10px]">
+                        <span class="soc-badge soc-badge-safe">SOC 2 TYPE II READY</span>
+                        <span>XGBoost 3.2</span>
+                        <span>Isolation Forest</span>
+                        <span>SHAP 0.51</span>
+                    </div>
+                </div>
+            </footer>
+
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container"></div>
+
+    <!-- Global Application Scripts -->
+    <script>
+        // Real-Time UTC Clock
+        function updateClock() {
+            const el = document.getElementById('live-clock');
+            if (el) {
+                const now = new Date();
+                el.innerText = 'UTC ' + now.toUTCString().split(' ')[4];
+            }
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Theme Toggle Handler
+        function toggleSOCTheme() {
+            const current = document.documentElement.getAttribute('data-theme') || 'dark';
+            const next = current === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', next);
+            localStorage.setItem('dici-theme', next);
+            updateThemeIcon(next);
+            
+            // Dispatch event for theme-aware charts
+            window.dispatchEvent(new CustomEvent('soc-theme-changed', { detail: { theme: next } }));
+            showToast(`Theme switched to ${next.toUpperCase()} mode`, 'info');
+        }
+
+        function updateThemeIcon(theme) {
+            const btn = document.getElementById('theme-toggle-btn');
+            if (btn) {
+                btn.innerHTML = theme === 'dark' 
+                    ? '<i data-lucide="sun" class="w-4 h-4 text-amber-400"></i>' 
+                    : '<i data-lucide="moon" class="w-4 h-4 text-indigo-600"></i>';
+                lucide.createIcons();
+            }
+        }
+
+        // Global Toast Notification Helper
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+
+            const toast = document.createElement('div');
+            toast.className = 'soc-toast';
+            
+            let iconName = 'info';
+            let iconColor = 'text-cyan-400';
+            if (type === 'success') { iconName = 'check-circle-2'; iconColor = 'text-emerald-400'; }
+            else if (type === 'warning') { iconName = 'alert-triangle'; iconColor = 'text-amber-400'; }
+            else if (type === 'error') { iconName = 'x-circle'; iconColor = 'text-rose-400'; }
+
+            toast.innerHTML = `
+                <i data-lucide="${iconName}" class="w-5 h-5 ${iconColor} shrink-0"></i>
+                <span class="text-xs font-sans text-[var(--text-primary)] flex-1">${message}</span>
+                <button onclick="this.parentElement.remove()" class="text-[var(--text-muted)] hover:text-[var(--text-primary)] text-sm">
+                    <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                </button>
+            `;
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100%)';
+                toast.style.transition = 'all 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 4500);
+        }
+
+        // Global Nav Status Poller
+        async function updateNavStatus() {
+            try {
+                // Model Version
+                const mRes = await fetch('/api/models/active');
+                if (mRes.ok) {
+                    const mData = await mRes.json();
+                    const el = document.getElementById('sidebar-model-ver');
+                    if (el) el.innerText = mData.version || 'v1.0';
+                }
+
+                // CTI Buffer
+                const bRes = await fetch('/api/cti/validated_buffer');
+                if (bRes.ok) {
+                    const bData = await bRes.json();
+                    const bBadge = document.getElementById('sidebar-cti-badge');
+                    if (bBadge) bBadge.innerText = `${bData.pending_count}/${bData.threshold}`;
+                    if (bData.pending_count >= bData.threshold) {
+                        showRetrainBanner(`CTI Validated Buffer reached threshold (${bData.pending_count}/${bData.threshold} samples). Retraining recommended.`);
+                    }
+                }
+
+                // Drift Status
+                const dRes = await fetch('/api/drift/status');
+                if (dRes.ok) {
+                    const dData = await dRes.json();
+                    const dot = document.getElementById('sidebar-drift-dot');
+                    if (dot) {
+                        if (dData.overall_status === 'DRIFT_DETECTED') {
+                            dot.className = 'w-2 h-2 rounded-full bg-rose-500 animate-ping ml-auto';
+                            showRetrainBanner(`Concept Drift detected on feature(s): ${dData.drifting_features.join(', ')}. Model adaptation advised.`);
+                        } else if (dData.overall_status === 'WARNING') {
+                            dot.className = 'w-2 h-2 rounded-full bg-amber-400 ml-auto';
+                        } else {
+                            dot.className = 'w-2 h-2 rounded-full bg-emerald-400 ml-auto';
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error("Status fetch error:", e);
+            }
+        }
+
+        function showRetrainBanner(msg) {
+            const banner = document.getElementById('retrain-alert-banner');
+            const txt = document.getElementById('retrain-alert-message');
+            if (banner && txt) {
+                txt.innerText = msg;
+                banner.classList.remove('hidden');
+            }
+        }
+
+        async function triggerImmediateRetrain() {
+            showToast("Triggering incremental model retraining with replay memory...", "info");
+            try {
+                const res = await fetch('/api/models/retrain', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({reason: 'Immediate Retrain from SOC Console'})
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(`Model successfully upgraded: ${data.old_version} → ${data.new_version}. Samples incorporated: ${data.samples_added}`, 'success');
+                    const banner = document.getElementById('retrain-alert-banner');
+                    if (banner) banner.classList.add('hidden');
+                    updateNavStatus();
+                } else {
+                    showToast(`Retrain response: ${data.message}`, 'warning');
+                }
+            } catch (err) {
+                showToast(`Retrain error: ${err}`, 'error');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const currentTheme = localStorage.getItem('dici-theme') || 'dark';
+            updateThemeIcon(currentTheme);
+            lucide.createIcons();
+            updateNavStatus();
+            setInterval(updateNavStatus, 10000);
+        });
+    </script>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

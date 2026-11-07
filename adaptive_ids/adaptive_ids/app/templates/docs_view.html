@@ -1,0 +1,307 @@
+{% extends "base.html" %}
+
+{% block title %}Research Methodology & Architecture{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Top Paper Header Card with BibTeX Copy -->
+    <div class="p-8 rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] shadow-xl relative overflow-hidden">
+        <div class="absolute -right-20 -top-20 w-80 h-80 bg-gradient-to-br from-indigo-500/15 via-purple-500/10 to-transparent rounded-full blur-3xl pointer-events-none"></div>
+
+        <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 relative z-10">
+            <div class="space-y-3 max-w-4xl">
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="soc-badge border-indigo-500/40 bg-indigo-500/15 text-indigo-300 font-mono text-[10px] uppercase tracking-wider font-semibold">
+                        IEEE Transactions on Machine Learning in Communications and Networking (TMLCN 2025)
+                    </span>
+                    <span class="soc-badge border-emerald-500/30 bg-emerald-500/10 text-emerald-400 font-mono text-[10px]">
+                        PEER REVIEWED
+                    </span>
+                    <span class="soc-badge border-purple-500/30 bg-purple-500/10 text-purple-400 font-mono text-[10px]">
+                        DICI ARCHITECTURE
+                    </span>
+                </div>
+
+                <h1 class="text-2xl sm:text-3xl font-black text-[var(--text-primary)] tracking-tight">
+                    Evolving ML-Based Intrusion Detection: Cyber Threat Intelligence for Dynamic Model Updates
+                </h1>
+
+                <div class="text-xs text-[var(--text-muted)] font-mono space-y-1">
+                    <p><strong class="text-[var(--text-primary)]">Authors:</strong> Y. -D. Lin, Y. -H. Lu, R. -H. Hwang, Y. -C. Lai, D. Sudyana and W. -B. Lee</p>
+                    <p><strong class="text-[var(--text-primary)]">Citation:</strong> IEEE TMLCN, vol. 3, pp. 605-622, 2025 &bull; <strong class="text-[var(--text-primary)]">DOI:</strong> <a href="https://doi.org/10.1109/TMLCN.2025.3564587" target="_blank" class="text-indigo-400 hover:underline">10.1109/TMLCN.2025.3564587</a></p>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap lg:flex-col gap-2 shrink-0">
+                <button onclick="copyBibtexCitation()" class="soc-btn-primary text-xs">
+                    <i data-lucide="bookmark" class="w-3.5 h-3.5 mr-1.5"></i>
+                    Copy BibTeX
+                </button>
+                <a href="/docs" target="_blank" class="soc-btn-secondary text-xs text-center">
+                    <i data-lucide="external-link" class="w-3.5 h-3.5 mr-1.5"></i>
+                    Interactive API Docs
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Comparative Table: Static IDS vs DICI Framework -->
+    <div class="soc-card overflow-hidden">
+        <div class="p-5 border-b border-[var(--border-subtle)] flex items-center justify-between">
+            <div>
+                <h3 class="text-sm font-bold text-[var(--text-primary)] flex items-center">
+                    <i data-lucide="git-compare" class="w-4 h-4 text-indigo-400 mr-2"></i>
+                    Comparative Paradigm: Conventional Static IDS vs Adaptive DICI Architecture
+                </h3>
+                <p class="text-xs text-[var(--text-muted)] mt-0.5">
+                    Structural comparison demonstrating architectural superiority over conventional signature and static ML systems
+                </p>
+            </div>
+            <span class="soc-badge border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-[10px] font-mono">
+                5 CRITICAL AXES
+            </span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs font-sans">
+                <thead class="bg-[var(--bg-elevated)] text-[var(--text-muted)] uppercase text-[10px] tracking-wider font-mono border-b border-[var(--border-subtle)]">
+                    <tr>
+                        <th class="py-3.5 px-4 font-semibold w-1/4">Evaluation Dimension</th>
+                        <th class="py-3.5 px-4 font-semibold w-3/8 text-rose-400">Conventional Static ML-IDS</th>
+                        <th class="py-3.5 px-4 font-semibold w-3/8 text-emerald-400">Proposed Adaptive CTI-IDS (DICI)</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-[var(--border-subtle)] text-[var(--text-primary)]">
+                    <tr class="hover:bg-[var(--bg-hover)] transition">
+                        <td class="py-3.5 px-4 font-bold text-[var(--text-primary)]">Threat Detection Scope</td>
+                        <td class="py-3.5 px-4 text-rose-400/90 leading-relaxed">
+                            Degrades rapidly against zero-day variants and mutated payloads. High false negatives on unseen traffic distributions.
+                        </td>
+                        <td class="py-3.5 px-4 text-emerald-400/90 leading-relaxed">
+                            Hybrid supervised (XGBoost) + unsupervised (Isolation Forest) flags known attacks and catches novel outlier anomalies.
+                        </td>
+                    </tr>
+                    <tr class="hover:bg-[var(--bg-hover)] transition">
+                        <td class="py-3.5 px-4 font-bold text-[var(--text-primary)]">CTI Integration</td>
+                        <td class="py-3.5 px-4 text-rose-400/90 leading-relaxed">
+                            Passive IP/domain blocklists easily evaded by rapid port hopping, fast-flux DNS, and cloud IP cycling.
+                        </td>
+                        <td class="py-3.5 px-4 text-emerald-400/90 leading-relaxed">
+                            CTI Transfer Model correlates threat telemetry directly into validated ground-truth training vectors.
+                        </td>
+                    </tr>
+                    <tr class="hover:bg-[var(--bg-hover)] transition">
+                        <td class="py-3.5 px-4 font-bold text-[var(--text-primary)]">Model Lifecycle &amp; Ops</td>
+                        <td class="py-3.5 px-4 text-rose-400/90 leading-relaxed">
+                            Fixed frozen weights; requires expensive offline batch re-labeling and manual retraining cycles.
+                        </td>
+                        <td class="py-3.5 px-4 text-emerald-400/90 leading-relaxed">
+                            Online incremental boosting updates booster trees with historical replay memory to prevent catastrophic forgetting.
+                        </td>
+                    </tr>
+                    <tr class="hover:bg-[var(--bg-hover)] transition">
+                        <td class="py-3.5 px-4 font-bold text-[var(--text-primary)]">Concept Drift Handling</td>
+                        <td class="py-3.5 px-4 text-rose-400/90 leading-relaxed">
+                            Ignored; leads to silent performance degradation, model obsolescence, and security blind spots.
+                        </td>
+                        <td class="py-3.5 px-4 text-emerald-400/90 leading-relaxed">
+                            Statistical surveillance via Two-Sample Kolmogorov-Smirnov test, PSI, and ADWIN streaming cuts.
+                        </td>
+                    </tr>
+                    <tr class="hover:bg-[var(--bg-hover)] transition">
+                        <td class="py-3.5 px-4 font-bold text-[var(--text-primary)]">Decision Interpretability</td>
+                        <td class="py-3.5 px-4 text-rose-400/90 leading-relaxed">
+                            Opaque black-box outputs without granular feature attribution or SOC analyst decision rationale.
+                        </td>
+                        <td class="py-3.5 px-4 text-emerald-400/90 leading-relaxed">
+                            SHAP TreeExplainer delivers waterfall feature attributions and automated natural language reasoning.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Mathematical Foundations & Formulations -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Formula 1: CTI Transfer Correlation -->
+        <div class="soc-card p-5 space-y-3">
+            <div class="flex items-center justify-between">
+                <h4 class="text-xs font-bold text-purple-400 font-mono uppercase tracking-wider flex items-center">
+                    <i data-lucide="cpu" class="w-4 h-4 mr-2"></i> 1. CTI Transfer Model Correlation
+                </h4>
+                <span class="soc-badge border-purple-500/20 bg-purple-500/10 text-purple-400 text-[9px] font-mono">&tau; = 0.75</span>
+            </div>
+            <p class="text-xs text-[var(--text-muted)] leading-relaxed">
+                The CTI Transfer Model computes a normalized correlation score fusing external threat intelligence with observed network sightings:
+            </p>
+            <div class="p-3 bg-[var(--bg-elevated)] rounded-xl border border-[var(--border-subtle)] font-mono text-indigo-400 text-xs">
+                Score = w₁ &bull; CTI_Conf + w₂ &bull; (ThreatScore / 100) + w₃ &bull; TelemetryConsistency
+            </div>
+            <p class="text-[11px] text-[var(--text-muted)]">
+                Default weights: \(w_1 = 0.40, w_2 = 0.35, w_3 = 0.25\). Flows with \(\text{Score} \ge 0.75\) are certified as validated ground-truth vectors.
+            </p>
+        </div>
+
+        <!-- Formula 2: Statistical Concept Drift (KS & PSI) -->
+        <div class="soc-card p-5 space-y-3">
+            <div class="flex items-center justify-between">
+                <h4 class="text-xs font-bold text-blue-400 font-mono uppercase tracking-wider flex items-center">
+                    <i data-lucide="activity" class="w-4 h-4 mr-2"></i> 2. Kolmogorov-Smirnov &amp; PSI Drift
+                </h4>
+                <span class="soc-badge border-blue-500/20 bg-blue-500/10 text-blue-400 text-[9px] font-mono">p &lt; 0.05</span>
+            </div>
+            <p class="text-xs text-[var(--text-muted)] leading-relaxed">
+                Measures supremum distance between empirical cumulative distributions of baseline and active sliding windows:
+            </p>
+            <div class="p-3 bg-[var(--bg-elevated)] rounded-xl border border-[var(--border-subtle)] font-mono text-blue-400 text-xs">
+                D = sup_x | F_baseline(x) - F_active(x) |<br>
+                PSI = &sum; (Active_i - Base_i) &bull; ln(Active_i / Base_i)
+            </div>
+            <p class="text-[11px] text-[var(--text-muted)]">
+                Drift is alerted when \(p\)-value \(< 0.05\) and \(D > 0.18\) or \(\text{PSI} \ge 0.25\) across standard feature vectors.
+            </p>
+        </div>
+
+        <!-- Formula 3: XGBoost Hybrid Decision -->
+        <div class="soc-card p-5 space-y-3">
+            <div class="flex items-center justify-between">
+                <h4 class="text-xs font-bold text-rose-400 font-mono uppercase tracking-wider flex items-center">
+                    <i data-lucide="git-branch" class="w-4 h-4 mr-2"></i> 3. Hybrid Classification &amp; Uncertainty Trigger
+                </h4>
+                <span class="soc-badge border-rose-500/20 bg-rose-500/10 text-rose-400 text-[9px] font-mono">&tau; = 0.70</span>
+            </div>
+            <p class="text-xs text-[var(--text-muted)] leading-relaxed">
+                Uncertainty condition that activates automated IoC extraction and CTI query:
+            </p>
+            <div class="p-3 bg-[var(--bg-elevated)] rounded-xl border border-[var(--border-subtle)] font-mono text-rose-400 text-xs">
+                Requires_CTI = (max_c P(c | x) &lt; &tau;) &or; (IsolationForest(x) == -1)
+            </div>
+            <p class="text-[11px] text-[var(--text-muted)]">
+                Flows with classification confidence below \(\tau = 0.70\) or flagged as Isolation Forest spatial outliers are submitted for threat enrichment.
+            </p>
+        </div>
+
+        <!-- Formula 4: SHAP Additive Feature Attribution -->
+        <div class="soc-card p-5 space-y-3">
+            <div class="flex items-center justify-between">
+                <h4 class="text-xs font-bold text-emerald-400 font-mono uppercase tracking-wider flex items-center">
+                    <i data-lucide="sparkles" class="w-4 h-4 mr-2"></i> 4. SHAP Shapley Additive Attribution
+                </h4>
+                <span class="soc-badge border-emerald-500/20 bg-emerald-500/10 text-emerald-400 text-[9px] font-mono">TreeExplainer</span>
+            </div>
+            <p class="text-xs text-[var(--text-muted)] leading-relaxed">
+                Instance-level attribution decomposing log-odds predictions into additive feature contributions:
+            </p>
+            <div class="p-3 bg-[var(--bg-elevated)] rounded-xl border border-[var(--border-subtle)] font-mono text-emerald-400 text-xs">
+                g(z') = &phi;₀ + &sum;_{i=1}^M &phi;_i &bull; z'_i
+            </div>
+            <p class="text-[11px] text-[var(--text-muted)]">
+                Where \(\phi_i\) is the Shapley marginal attribution for feature \(i\), explaining its direction and magnitude toward the verdict.
+            </p>
+        </div>
+    </div>
+
+    <!-- Integrated REST API Quick Reference -->
+    <div class="soc-card p-5">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h3 class="text-sm font-bold text-[var(--text-primary)] flex items-center">
+                    <i data-lucide="network" class="w-4 h-4 text-indigo-400 mr-2"></i>
+                    Integrated FastAPI REST Endpoints Architecture
+                </h3>
+                <p class="text-xs text-[var(--text-muted)] mt-0.5">
+                    High-throughput, asynchronous OpenAPI specification endpoints powering the SOC platform
+                </p>
+            </div>
+            <a href="/docs" target="_blank" class="soc-btn-secondary text-xs">
+                <i data-lucide="file-code" class="w-3.5 h-3.5 mr-1.5"></i>
+                Swagger UI
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 font-mono text-xs">
+            <div class="p-3 bg-[var(--bg-elevated)] rounded-xl border border-[var(--border-subtle)] hover:border-indigo-500/30 transition">
+                <div class="flex items-center justify-between">
+                    <span class="text-emerald-400 font-bold">POST</span>
+                    <span class="text-[10px] text-[var(--text-muted)] font-mono">200 OK</span>
+                </div>
+                <div class="text-[var(--text-primary)] font-bold mt-1">/api/traffic/ingest</div>
+                <p class="text-[var(--text-muted)] text-[11px] mt-1 font-sans">Submit 16-feature network flow for real-time hybrid classification.</p>
+            </div>
+
+            <div class="p-3 bg-[var(--bg-elevated)] rounded-xl border border-[var(--border-subtle)] hover:border-indigo-500/30 transition">
+                <div class="flex items-center justify-between">
+                    <span class="text-emerald-400 font-bold">POST</span>
+                    <span class="text-[10px] text-[var(--text-muted)] font-mono">200 OK</span>
+                </div>
+                <div class="text-[var(--text-primary)] font-bold mt-1">/api/traffic/simulate</div>
+                <p class="text-[var(--text-muted)] text-[11px] mt-1 font-sans">Batch inject Benign, DoS, PortScan, or Zero-Day drift waves.</p>
+            </div>
+
+            <div class="p-3 bg-[var(--bg-elevated)] rounded-xl border border-[var(--border-subtle)] hover:border-indigo-500/30 transition">
+                <div class="flex items-center justify-between">
+                    <span class="text-indigo-400 font-bold">GET</span>
+                    <span class="text-[10px] text-[var(--text-muted)] font-mono">JSON Buffer</span>
+                </div>
+                <div class="text-[var(--text-primary)] font-bold mt-1">/api/cti/validated_buffer</div>
+                <p class="text-[var(--text-muted)] text-[11px] mt-1 font-sans">Retrieve validated ground-truth samples pending incremental model update.</p>
+            </div>
+
+            <div class="p-3 bg-[var(--bg-elevated)] rounded-xl border border-[var(--border-subtle)] hover:border-indigo-500/30 transition">
+                <div class="flex items-center justify-between">
+                    <span class="text-indigo-400 font-bold">GET</span>
+                    <span class="text-[10px] text-[var(--text-muted)] font-mono">KS &bull; PSI &bull; ADWIN</span>
+                </div>
+                <div class="text-[var(--text-primary)] font-bold mt-1">/api/drift/status</div>
+                <p class="text-[var(--text-muted)] text-[11px] mt-1 font-sans">Inspect Two-Sample KS test statistics, p-values, and ADWIN cut flags.</p>
+            </div>
+
+            <div class="p-3 bg-[var(--bg-elevated)] rounded-xl border border-[var(--border-subtle)] hover:border-indigo-500/30 transition">
+                <div class="flex items-center justify-between">
+                    <span class="text-purple-400 font-bold">POST</span>
+                    <span class="text-[10px] text-[var(--text-muted)] font-mono">Incremental Update</span>
+                </div>
+                <div class="text-[var(--text-primary)] font-bold mt-1">/api/models/retrain</div>
+                <p class="text-[var(--text-muted)] text-[11px] mt-1 font-sans">Trigger online incremental retraining with rehearsal replay memory.</p>
+            </div>
+
+            <div class="p-3 bg-[var(--bg-elevated)] rounded-xl border border-[var(--border-subtle)] hover:border-indigo-500/30 transition">
+                <div class="flex items-center justify-between">
+                    <span class="text-indigo-400 font-bold">GET</span>
+                    <span class="text-[10px] text-[var(--text-muted)] font-mono">Shapley Values</span>
+                </div>
+                <div class="text-[var(--text-primary)] font-bold mt-1">/api/explain/flow/{id}</div>
+                <p class="text-[var(--text-muted)] text-[11px] mt-1 font-sans">Retrieve TreeExplainer SHAP attribution breakdown and narrative.</p>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function copyBibtexCitation() {
+        const bibtex = `@article{lin2025evolving,
+  title={Evolving ML-Based Intrusion Detection: Cyber Threat Intelligence for Dynamic Model Updates},
+  author={Lin, Ying-Dar and Lu, Yu-Hsuan and Hwang, Ren-Hung and Lai, Yuan-Cheng and Sudyana, Dodi and Lee, Wei-Ber},
+  journal={IEEE Transactions on Machine Learning in Communications and Networking},
+  volume={3},
+  pages={605--622},
+  year={2025},
+  publisher={IEEE},
+  doi={10.1109/TMLCN.2025.3564587}
+}`;
+        navigator.clipboard.writeText(bibtex);
+        if (window.socToast) {
+            window.socToast("BibTeX citation copied to clipboard", "success");
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        if (window.lucide) window.lucide.createIcons();
+    });
+</script>
+{% endblock %}

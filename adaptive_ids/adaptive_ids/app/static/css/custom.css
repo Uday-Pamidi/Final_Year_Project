@@ -1,0 +1,306 @@
+/* ==========================================================================
+   DICI SENTINEL | ENTERPRISE SOC DESIGN SYSTEM (CROWDSTRIKE / PALO ALTO GRADE)
+   ========================================================================== */
+
+:root {
+  /* Dark SOC Theme (Default) */
+  --bg-base: #0B1020;
+  --bg-surface: #121A2F;
+  --bg-elevated: #18223C;
+  --bg-hover: #1E2B4D;
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-medium: rgba(255, 255, 255, 0.14);
+  --border-accent: rgba(79, 124, 255, 0.4);
+
+  --text-primary: #F8FAFC;
+  --text-secondary: #94A3B8;
+  --text-muted: #64748B;
+  --text-accent: #818CF8;
+
+  --accent-primary: #4F7CFF;
+  --accent-secondary: #7C5CFF;
+  --accent-gradient: linear-gradient(135deg, #4F7CFF 0%, #7C5CFF 100%);
+  --accent-glow: rgba(79, 124, 255, 0.25);
+
+  --status-safe: #10B981;
+  --status-safe-bg: rgba(16, 185, 129, 0.12);
+  --status-warning: #F59E0B;
+  --status-warning-bg: rgba(245, 158, 11, 0.12);
+  --status-attack: #EF4444;
+  --status-attack-bg: rgba(239, 68, 68, 0.14);
+  --status-info: #06B6D4;
+  --status-info-bg: rgba(6, 182, 212, 0.12);
+  --status-purple: #8B5CF6;
+  --status-purple-bg: rgba(139, 92, 246, 0.12);
+
+  --card-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5), 0 0 0 1px var(--border-subtle);
+  --card-shadow-hover: 0 12px 30px -4px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--border-medium), 0 0 20px -2px var(--accent-glow);
+  
+  --chart-grid: rgba(255, 255, 255, 0.05);
+  --chart-tick: #64748B;
+}
+
+html[data-theme="light"] {
+  /* Enterprise Light Theme */
+  --bg-base: #F4F6FB;
+  --bg-surface: #FFFFFF;
+  --bg-elevated: #F8FAFC;
+  --bg-hover: #EEF2F9;
+  --border-subtle: rgba(15, 23, 42, 0.08);
+  --border-medium: rgba(15, 23, 42, 0.16);
+  --border-accent: rgba(79, 124, 255, 0.5);
+
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --text-muted: #94A3B8;
+  --text-accent: #4F7CFF;
+
+  --accent-primary: #3B6BFF;
+  --accent-secondary: #6366F1;
+  --accent-gradient: linear-gradient(135deg, #3B6BFF 0%, #6366F1 100%);
+  --accent-glow: rgba(59, 107, 255, 0.15);
+
+  --status-safe: #059669;
+  --status-safe-bg: #ECFDF5;
+  --status-warning: #D97706;
+  --status-warning-bg: #FFFBEB;
+  --status-attack: #DC2626;
+  --status-attack-bg: #FEF2F2;
+  --status-info: #0891B2;
+  --status-info-bg: #ECFEFF;
+  --status-purple: #7C3AED;
+  --status-purple-bg: #F5F3FF;
+
+  --card-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.04), 0 0 0 1px var(--border-subtle);
+  --card-shadow-hover: 0 10px 25px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04), 0 0 0 1px var(--border-medium);
+
+  --chart-grid: rgba(15, 23, 42, 0.06);
+  --chart-tick: #64748B;
+}
+
+/* Base Body Application */
+body {
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* Glassmorphic Enterprise Card */
+.soc-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 1rem;
+  box-shadow: var(--card-shadow);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.soc-card:hover {
+  border-color: var(--border-medium);
+  box-shadow: var(--card-shadow-hover);
+}
+
+.soc-card-elevated {
+  background-color: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+}
+
+/* Action Buttons */
+.soc-btn-primary {
+  background: var(--accent-gradient);
+  color: #FFFFFF;
+  font-weight: 600;
+  border-radius: 0.625rem;
+  padding: 0.5rem 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  box-shadow: 0 4px 14px 0 var(--accent-glow);
+  transition: all 0.2s ease;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.soc-btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px 0 var(--accent-glow);
+  filter: brightness(1.08);
+}
+
+.soc-btn-primary:active {
+  transform: translateY(0);
+}
+
+.soc-btn-secondary {
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-subtle);
+  font-weight: 500;
+  border-radius: 0.625rem;
+  padding: 0.5rem 0.875rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.soc-btn-secondary:hover {
+  background-color: var(--bg-hover);
+  border-color: var(--border-medium);
+  color: var(--text-primary);
+}
+
+/* Navigation Links */
+.soc-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.625rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.soc-nav-item:hover {
+  color: var(--text-primary);
+  background-color: var(--bg-hover);
+}
+
+.soc-nav-item.active {
+  color: #FFFFFF;
+  background: linear-gradient(90deg, rgba(79, 124, 255, 0.18) 0%, rgba(124, 92, 255, 0.08) 100%);
+  border-left: 3px solid var(--accent-primary);
+  font-weight: 600;
+}
+
+html[data-theme="light"] .soc-nav-item.active {
+  color: var(--accent-primary);
+  background: rgba(79, 124, 255, 0.1);
+  border-left: 3px solid var(--accent-primary);
+}
+
+/* Enterprise Badges */
+.soc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
+  font-size: 0.6875rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+}
+
+.soc-badge-safe {
+  color: var(--status-safe);
+  background-color: var(--status-safe-bg);
+  border-color: rgba(16, 185, 129, 0.25);
+}
+
+.soc-badge-warning {
+  color: var(--status-warning);
+  background-color: var(--status-warning-bg);
+  border-color: rgba(245, 158, 11, 0.25);
+}
+
+.soc-badge-attack {
+  color: var(--status-attack);
+  background-color: var(--status-attack-bg);
+  border-color: rgba(239, 68, 68, 0.25);
+}
+
+.soc-badge-info {
+  color: var(--status-info);
+  background-color: var(--status-info-bg);
+  border-color: rgba(6, 182, 212, 0.25);
+}
+
+.soc-badge-purple {
+  color: var(--status-purple);
+  background-color: var(--status-purple-bg);
+  border-color: rgba(139, 92, 246, 0.25);
+}
+
+/* Animations */
+@keyframes pulse-dot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.35); opacity: 0.6; }
+}
+
+.animate-pulse-dot {
+  animation: pulse-dot 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton-loading {
+  background: linear-gradient(90deg, var(--bg-surface) 25%, var(--bg-elevated) 50%, var(--bg-surface) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.8s infinite;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-medium);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Toast Container */
+#toast-container {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  pointer-events: none;
+}
+
+.soc-toast {
+  pointer-events: auto;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-medium);
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.8125rem;
+  animation: slideInRight 0.25s ease-out;
+  max-width: 24rem;
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

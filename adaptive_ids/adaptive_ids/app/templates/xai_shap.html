@@ -1,0 +1,476 @@
+{% extends "base.html" %}
+
+{% block title %}SHAP Explainable AI Studio{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Top Action Banner & Header -->
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 p-6 rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] shadow-lg relative overflow-hidden">
+        <div class="absolute -right-16 -top-16 w-56 h-56 bg-gradient-to-br from-indigo-500/10 to-purple-500/0 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div>
+            <div class="flex items-center space-x-2 mb-1.5">
+                <span class="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></span>
+                <span class="text-[11px] font-mono uppercase tracking-wider text-[var(--text-muted)] font-semibold">Explainable AI &bull; Model Attribution</span>
+            </div>
+            <h1 class="text-2xl font-bold tracking-tight text-[var(--text-primary)]">
+                SHAP Explainable AI Studio
+            </h1>
+            <p class="text-xs sm:text-sm text-[var(--text-muted)] mt-1 max-w-2xl">
+                Instance-level attribution using TreeExplainer Shapley Additive Explanations. Decomposes hybrid XGBoost predictions into additive mathematical feature contributions.
+            </p>
+        </div>
+
+        <!-- Flow Selector Ribbon -->
+        <div class="flex flex-wrap items-center gap-2.5 shrink-0 z-10">
+            <div class="relative min-w-[280px]">
+                <select 
+                    id="flow-select-dropdown" 
+                    onchange="onFlowSelected()" 
+                    class="w-full bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-[var(--text-primary)] rounded-xl px-3 py-2 text-xs font-mono focus:outline-none focus:border-indigo-500 transition cursor-pointer"
+                >
+                    <option value="">Select a captured network flow...</option>
+                </select>
+            </div>
+
+            <button onclick="loadGlobalImportance()" class="soc-btn-secondary text-xs" title="Calculate mean absolute SHAP values across baseline dataset">
+                <i data-lucide="bar-chart" class="w-3.5 h-3.5 mr-1.5 text-indigo-400"></i>
+                <span>Global Rankings</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Active Flow Overview Session Card -->
+    <div class="soc-card p-5">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 items-center">
+            <div class="space-y-1">
+                <span class="text-[var(--text-muted)] text-[10px] uppercase font-mono tracking-wider block">Inspected Session</span>
+                <div class="flex items-center space-x-1.5">
+                    <span id="explain-flow-id" class="text-sm font-bold text-indigo-400 font-mono">FLOW-SAMPLE-000</span>
+                    <button onclick="copyFlowId()" class="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition" title="Copy Flow ID">
+                        <i data-lucide="copy" class="w-3 h-3"></i>
+                    </button>
+                </div>
+                <span id="explain-endpoints" class="text-xs text-[var(--text-muted)] block font-mono">192.168.1.100 &rarr; 10.0.0.5:80</span>
+            </div>
+
+            <div class="space-y-1">
+                <span class="text-[var(--text-muted)] text-[10px] uppercase font-mono tracking-wider block">Hybrid Model Verdict</span>
+                <div class="flex items-center space-x-2">
+                    <span id="explain-verdict" class="text-base font-bold font-mono text-emerald-400">Benign</span>
+                    <span id="explain-verdict-pill" class="soc-badge border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-[10px]">BASELINE</span>
+                </div>
+                <span class="text-[10px] text-[var(--text-muted)] block font-mono">XGBoost Multiclass</span>
+            </div>
+
+            <div class="space-y-1">
+                <span class="text-[var(--text-muted)] text-[10px] uppercase font-mono tracking-wider block">Supervised Confidence</span>
+                <div class="flex items-center space-x-2">
+                    <div class="w-24 bg-[var(--bg-elevated)] rounded-full h-2 overflow-hidden border border-[var(--border-subtle)]">
+                        <div id="explain-conf-bar" class="bg-indigo-500 h-2 transition-all duration-500" style="width: 95%"></div>
+                    </div>
+                    <span id="explain-conf-text" class="text-xs font-bold text-[var(--text-primary)] font-mono">95.0%</span>
+                </div>
+                <span class="text-[10px] text-[var(--text-muted)] block font-mono">Threshold &tau; = 0.70</span>
+            </div>
+
+            <div class="space-y-1">
+                <span class="text-[var(--text-muted)] text-[10px] uppercase font-mono tracking-wider block">Isolation Forest</span>
+                <div class="flex items-center space-x-1.5">
+                    <span id="explain-anomaly-status" class="text-xs font-bold font-mono text-[var(--text-primary)]">Normal Feature Space</span>
+                </div>
+                <span class="text-[10px] text-[var(--text-muted)] block font-mono">Unsupervised Anomaly Score</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Natural Language SOC Analyst Attribution Narrative -->
+    <div class="soc-card p-5 border-indigo-500/30 bg-indigo-950/15 relative overflow-hidden">
+        <div class="absolute -right-8 -bottom-8 w-40 h-40 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none"></div>
+
+        <div class="flex items-start space-x-4">
+            <div class="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shrink-0 mt-0.5">
+                <i data-lucide="brain-circuit" class="w-5 h-5"></i>
+            </div>
+            <div class="flex-1">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xs font-bold text-indigo-300 font-mono uppercase tracking-wider flex items-center gap-1.5">
+                        <span>Autonomous SOC Analyst Attribution Narrative</span>
+                        <span class="soc-badge border-indigo-500/30 bg-indigo-500/15 text-indigo-300 text-[9px] py-0">SYNTHESIZED</span>
+                    </h3>
+                    <span class="text-[10px] text-[var(--text-muted)] font-mono">XAI Narrative Engine</span>
+                </div>
+                <p id="explain-narrative-text" class="text-xs text-[var(--text-primary)] mt-1.5 leading-relaxed font-sans">
+                    Select a flow from the dropdown above to generate instance Shapley value feature contributions and natural language attribution reasoning.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Grid: Local SHAP Waterfall & Contributions -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Local SHAP Feature Contribution Chart -->
+        <div class="soc-card p-5 lg:col-span-2">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+                <div>
+                    <h3 class="text-sm font-bold text-[var(--text-primary)] flex items-center">
+                        <i data-lucide="git-pull-request" class="w-4 h-4 text-indigo-400 mr-2"></i>
+                        Local SHAP Feature Attribution (Waterfall / Force Breakdown)
+                    </h3>
+                    <p class="text-xs text-[var(--text-muted)] mt-0.5">
+                        <span class="text-rose-400 font-bold font-mono">+ &phi; (Red)</span> increases attack classification &bull; 
+                        <span class="text-emerald-400 font-bold font-mono">- &phi; (Green)</span> supports benign baseline
+                    </p>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span class="soc-badge border-slate-500/20 bg-[var(--bg-elevated)] text-[var(--text-muted)] text-[10px] font-mono">
+                        Base Value: <strong id="explain-base-val" class="text-[var(--text-primary)] ml-1">0.0000</strong>
+                    </span>
+                </div>
+            </div>
+            <div class="h-80 relative">
+                <canvas id="shapContributionChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Global Feature Importance Ranking -->
+        <div class="soc-card p-5">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h3 class="text-sm font-bold text-[var(--text-primary)] flex items-center">
+                        <i data-lucide="award" class="w-4 h-4 text-purple-400 mr-2"></i>
+                        Global Feature Importance
+                    </h3>
+                    <p class="text-xs text-[var(--text-muted)] mt-0.5">Mean |SHAP| value across model reference baseline</p>
+                </div>
+                <span class="soc-badge border-purple-500/20 bg-purple-500/10 text-purple-400 text-[10px] font-mono">
+                    GLOBAL
+                </span>
+            </div>
+            <div class="h-80 relative">
+                <canvas id="globalImportanceChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feature Contribution Data Table -->
+    <div class="soc-card overflow-hidden">
+        <div class="p-5 border-b border-[var(--border-subtle)] flex items-center justify-between">
+            <div>
+                <h3 class="text-sm font-bold text-[var(--text-primary)] flex items-center">
+                    <i data-lucide="list-ordered" class="w-4 h-4 text-indigo-400 mr-2"></i>
+                    Detailed Feature Shapley Values &amp; Attribution Metrics
+                </h3>
+                <p class="text-xs text-[var(--text-muted)] mt-0.5">
+                    Decomposed marginal additive contributions summing to final prediction score
+                </p>
+            </div>
+            <span class="soc-badge border-indigo-500/20 bg-indigo-500/10 text-indigo-400 text-[10px] font-mono">
+                16 EVALUATED FEATURES
+            </span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs font-sans">
+                <thead class="bg-[var(--bg-elevated)] text-[var(--text-muted)] uppercase text-[10px] tracking-wider font-mono border-b border-[var(--border-subtle)]">
+                    <tr>
+                        <th class="py-3 px-4 font-semibold">Network Feature</th>
+                        <th class="py-3 px-4 font-semibold">Observed Flow Value</th>
+                        <th class="py-3 px-4 font-semibold">SHAP Contribution (&phi;)</th>
+                        <th class="py-3 px-4 font-semibold">Attribution Impact Direction</th>
+                    </tr>
+                </thead>
+                <tbody id="shap-table-body" class="divide-y divide-[var(--border-subtle)] text-[var(--text-primary)] font-mono">
+                    <tr>
+                        <td colspan="4" class="py-8 text-center text-[var(--text-muted)] font-sans">
+                            <div class="inline-flex items-center space-x-2">
+                                <i data-lucide="loader" class="w-4 h-4 animate-spin text-indigo-400"></i>
+                                <span>Loading feature attribution matrix...</span>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let localShapChart = null;
+    let globalShapChart = null;
+    let cachedFlows = [];
+
+    function getChartThemeColors() {
+        const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+        return {
+            textColor: isDark ? '#94A3B8' : '#475569',
+            gridColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.06)',
+            tooltipBg: isDark ? '#121A2F' : '#FFFFFF',
+            tooltipBorder: isDark ? 'rgba(255, 255, 255, 0.1)' : '#E2E8F0',
+            tooltipText: isDark ? '#F1F5F9' : '#0F172A'
+        };
+    }
+
+    async function initXAIStudio() {
+        try {
+            const res = await fetch('/api/traffic/recent?limit=40');
+            if (res.ok) {
+                cachedFlows = await res.json();
+                populateFlowDropdown(cachedFlows);
+            }
+            await loadGlobalImportance();
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const targetFlowId = urlParams.get('flow_id');
+            if (targetFlowId) {
+                document.getElementById('flow-select-dropdown').value = targetFlowId;
+                await explainFlow(targetFlowId);
+            } else if (cachedFlows && cachedFlows.length > 0) {
+                document.getElementById('flow-select-dropdown').value = cachedFlows[0].id;
+                await explainFlow(cachedFlows[0].id);
+            }
+        } catch (e) {
+            console.error("Error initializing XAI Studio:", e);
+        }
+    }
+
+    function populateFlowDropdown(flows) {
+        const select = document.getElementById('flow-select-dropdown');
+        if (!flows || flows.length === 0) {
+            select.innerHTML = '<option value="">No captured flows yet. Run simulation from Dashboard.</option>';
+            return;
+        }
+
+        select.innerHTML = '<option value="">Select captured flow...</option>' + flows.map(f => `
+            <option value="${f.id}">${f.id} &bull; ${f.predicted_class} (${(f.confidence * 100).toFixed(0)}%) [${f.src_ip}]</option>
+        `).join('');
+    }
+
+    function onFlowSelected() {
+        const flowId = document.getElementById('flow-select-dropdown').value;
+        if (flowId) explainFlow(flowId);
+    }
+
+    async function explainFlow(flowId) {
+        try {
+            const res = await fetch(`/api/explain/flow/${flowId}`);
+            if (!res.ok) {
+                if (window.socToast) window.socToast("Flow not found or features unavailable", "warning");
+                return;
+            }
+            const data = await res.json();
+            renderFlowExplanation(data);
+        } catch (e) {
+            console.error("Error explaining flow:", e);
+        }
+    }
+
+    function renderFlowExplanation(data) {
+        document.getElementById('explain-flow-id').innerText = data.flow_id || '--';
+        document.getElementById('explain-endpoints').innerHTML = `${data.src_ip || '0.0.0.0'} &rarr; ${data.dst_ip || '0.0.0.0'}:${data.dst_port || 80}`;
+        
+        const verdict = document.getElementById('explain-verdict');
+        const verdictPill = document.getElementById('explain-verdict-pill');
+        verdict.innerText = data.predicted_label || 'Benign';
+        
+        if (data.predicted_label === 'Benign') {
+            verdict.className = 'text-base font-bold font-mono text-emerald-400';
+            verdictPill.className = 'soc-badge border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-[10px]';
+            verdictPill.innerText = 'BASELINE';
+        } else {
+            verdict.className = 'text-base font-bold font-mono text-rose-400';
+            verdictPill.className = 'soc-badge border-rose-500/30 bg-rose-500/10 text-rose-400 text-[10px]';
+            verdictPill.innerText = 'ATTACK FLAGGED';
+        }
+
+        const pct = Math.round((data.confidence || 0) * 100);
+        document.getElementById('explain-conf-bar').style.width = `${pct}%`;
+        document.getElementById('explain-conf-text').innerText = `${((data.confidence || 0) * 100).toFixed(1)}%`;
+
+        const anomEl = document.getElementById('explain-anomaly-status');
+        if (data.is_anomaly) {
+            anomEl.innerText = 'Flagged Outlier (Anomaly)';
+            anomEl.className = 'text-xs font-bold font-mono text-amber-400';
+        } else {
+            anomEl.innerText = 'Normal Feature Space';
+            anomEl.className = 'text-xs font-bold font-mono text-emerald-400';
+        }
+
+        document.getElementById('explain-base-val').innerText = (data.base_value || 0).toFixed(4);
+        document.getElementById('explain-narrative-text').innerText = data.analyst_summary || 'No narrative generated.';
+
+        renderLocalShapChart(data.feature_contributions || []);
+        renderShapTable(data.feature_contributions || []);
+    }
+
+    function renderLocalShapChart(contribs) {
+        const top = contribs.slice(0, 10);
+        const labels = top.map(c => c.feature);
+        const values = top.map(c => c.shap_value);
+        const colors = top.map(c => c.shap_value >= 0 ? '#F43F5E' : '#10B981');
+
+        const theme = getChartThemeColors();
+        const ctx = document.getElementById('shapContributionChart').getContext('2d');
+        if (localShapChart) localShapChart.destroy();
+
+        localShapChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'SHAP Contribution Value',
+                    data: values,
+                    backgroundColor: colors,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: theme.tooltipBg,
+                        borderColor: theme.tooltipBorder,
+                        borderWidth: 1,
+                        titleColor: theme.tooltipText,
+                        bodyColor: theme.tooltipText,
+                        cornerRadius: 8,
+                        callbacks: {
+                            label: function(context) {
+                                const val = context.raw;
+                                const direction = val >= 0 ? 'Increases Attack Risk' : 'Supports Benign Baseline';
+                                return `SHAP: ${val > 0 ? '+' : ''}${val.toFixed(4)} (${direction})`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { color: theme.gridColor },
+                        ticks: { color: theme.textColor, font: { family: 'JetBrains Mono', size: 10 } }
+                    },
+                    y: {
+                        grid: { display: false },
+                        ticks: { color: theme.textColor, font: { family: 'JetBrains Mono', size: 10, weight: '500' } }
+                    }
+                }
+            }
+        });
+    }
+
+    function renderShapTable(contribs) {
+        const tbody = document.getElementById('shap-table-body');
+        if (!contribs || contribs.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" class="py-6 text-center text-[var(--text-muted)] font-sans">No feature contributions available.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = contribs.map(c => {
+            const isPos = c.shap_value >= 0;
+            const badge = isPos
+                ? '<span class="soc-badge border-rose-500/30 bg-rose-500/10 text-rose-400 text-[10px]">+ Increases Attack Risk</span>'
+                : '<span class="soc-badge border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-[10px]">- Pushes Towards Benign</span>';
+
+            const formattedVal = typeof c.value === 'number' ? c.value.toLocaleString(undefined, {maximumFractionDigits: 2}) : c.value;
+
+            return `
+                <tr class="hover:bg-[var(--bg-hover)] transition">
+                    <td class="py-3 px-4 font-bold ${isPos ? 'text-rose-400' : 'text-emerald-400'}">
+                        ${c.feature}
+                    </td>
+                    <td class="py-3 px-4 text-[var(--text-primary)] font-mono">${formattedVal}</td>
+                    <td class="py-3 px-4 font-mono font-bold ${isPos ? 'text-rose-400' : 'text-emerald-400'}">
+                        ${c.shap_value > 0 ? '+' : ''}${c.shap_value.toFixed(4)}
+                    </td>
+                    <td class="py-3 px-4">${badge}</td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    async function loadGlobalImportance() {
+        try {
+            const res = await fetch('/api/explain/global?samples=100');
+            if (res.ok) {
+                const data = await res.json();
+                renderGlobalImportanceChart(data.rankings || []);
+            }
+        } catch (e) {
+            console.error("Error loading global importance:", e);
+        }
+    }
+
+    function renderGlobalImportanceChart(rankings) {
+        const top = (rankings || []).slice(0, 10);
+        const labels = top.map(r => r.feature.replace('total_', '').replace('_count', ''));
+        const values = top.map(r => r.importance);
+
+        const theme = getChartThemeColors();
+        const ctx = document.getElementById('globalImportanceChart').getContext('2d');
+        if (globalShapChart) globalShapChart.destroy();
+
+        globalShapChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Mean |SHAP|',
+                    data: values,
+                    backgroundColor: '#8B5CF6',
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: theme.tooltipBg,
+                        borderColor: theme.tooltipBorder,
+                        borderWidth: 1,
+                        titleColor: theme.tooltipText,
+                        bodyColor: theme.tooltipText,
+                        cornerRadius: 8
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { color: theme.gridColor },
+                        ticks: { color: theme.textColor, font: { family: 'JetBrains Mono', size: 9 } }
+                    },
+                    y: {
+                        grid: { display: false },
+                        ticks: { color: theme.textColor, font: { family: 'JetBrains Mono', size: 10 } }
+                    }
+                }
+            }
+        });
+    }
+
+    function copyFlowId() {
+        const id = document.getElementById('explain-flow-id').innerText;
+        navigator.clipboard.writeText(id);
+        if (window.socToast) window.socToast(`Copied ${id} to clipboard`, 'info');
+    }
+
+    // Re-render charts when theme changes
+    window.addEventListener('soc-theme-changed', () => {
+        const currentFlow = document.getElementById('flow-select-dropdown').value;
+        if (currentFlow) explainFlow(currentFlow);
+        loadGlobalImportance();
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        initXAIStudio();
+        if (window.lucide) window.lucide.createIcons();
+    });
+</script>
+{% endblock %}

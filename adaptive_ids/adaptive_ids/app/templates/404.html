@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}404 - Resource Not Found{% endblock %}
+
+{% block content %}
+<div class="min-h-[70vh] flex items-center justify-center p-4">
+    <div class="max-w-xl w-full text-center space-y-6">
+        
+        <!-- Glowing 404 Shield -->
+        <div class="relative inline-block">
+            <div class="w-24 h-24 rounded-3xl bg-gradient-to-tr from-rose-500/20 via-indigo-500/20 to-purple-500/20 border border-[var(--border-subtle)] flex items-center justify-center text-rose-400 mx-auto shadow-2xl relative">
+                <i data-lucide="shield-alert" class="w-12 h-12"></i>
+            </div>
+            <div class="absolute -inset-4 bg-gradient-to-tr from-rose-500/10 to-indigo-500/10 rounded-full blur-xl pointer-events-none"></div>
+        </div>
+
+        <div class="space-y-2">
+            <span class="soc-badge border-rose-500/30 bg-rose-500/10 text-rose-400 font-mono text-xs">
+                ERR_SECURITY_PERIMETER_404
+            </span>
+            <h1 class="text-3xl sm:text-4xl font-black text-[var(--text-primary)] tracking-tight font-mono">
+                TELEMETRY ENDPOINT UNRESOLVED
+            </h1>
+            <p class="text-sm text-[var(--text-muted)] max-w-md mx-auto leading-relaxed">
+                The requested SOC resource, flow query, or intelligence endpoint does not exist in the active routing table or has been decommissioned.
+            </p>
+        </div>
+
+        <!-- Quick Recovery Nav -->
+        <div class="flex flex-wrap items-center justify-center gap-3 pt-2">
+            <a href="/" class="soc-btn-secondary text-xs">
+                <i data-lucide="home" class="w-3.5 h-3.5 mr-1.5"></i>
+                Home Portal
+            </a>
+            <a href="/dashboard" class="soc-btn-primary text-xs">
+                <i data-lucide="layout-dashboard" class="w-3.5 h-3.5 mr-1.5"></i>
+                Executive SOC Dashboard
+            </a>
+            <a href="/live" class="soc-btn-secondary text-xs">
+                <i data-lucide="activity" class="w-3.5 h-3.5 mr-1.5"></i>
+                Live Flow Inspector
+            </a>
+        </div>
+
+        <!-- Routing Table Hint -->
+        <div class="p-4 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-left font-mono text-xs space-y-1.5 text-[var(--text-muted)]">
+            <div class="text-[10px] uppercase font-bold tracking-wider text-[var(--text-muted)]">Registered Primary Routes:</div>
+            <div class="grid grid-cols-2 gap-1 text-[11px]">
+                <a href="/dashboard" class="hover:text-indigo-400">&bull; /dashboard</a>
+                <a href="/live" class="hover:text-indigo-400">&bull; /live</a>
+                <a href="/cti" class="hover:text-indigo-400">&bull; /cti</a>
+                <a href="/drift" class="hover:text-indigo-400">&bull; /drift</a>
+                <a href="/explain" class="hover:text-indigo-400">&bull; /explain</a>
+                <a href="/docs-view" class="hover:text-indigo-400">&bull; /docs-view</a>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        if (window.lucide) window.lucide.createIcons();
+    });
+</script>
+{% endblock %}

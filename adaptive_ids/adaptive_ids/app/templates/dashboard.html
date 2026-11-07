@@ -1,0 +1,499 @@
+{% extends "base.html" %}
+
+{% block title %}Executive SOC Dashboard{% endblock %}
+{% block breadcrumb %}Executive SOC{% endblock %}
+{% block page_title %}Security Operations Command Center{% endblock %}
+{% block page_subtitle %}Real-time threat telemetry, dual-engine hybrid ML screening & autonomous CTI model adaptation.{% endblock %}
+
+{% block header_actions %}
+<div class="flex flex-wrap items-center gap-2">
+    <button onclick="simulateTraffic('benign', 20)" class="soc-btn-secondary text-xs font-mono" title="Generate 20 legitimate traffic flows">
+        <i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-400"></i>
+        <span>+20 Normal</span>
+    </button>
+    <button onclick="simulateTraffic('dos', 15)" class="soc-btn-secondary text-xs font-mono text-rose-400 hover:text-rose-300" title="Simulate SYN flood volumetric attack">
+        <i data-lucide="zap" class="w-3.5 h-3.5 text-rose-400"></i>
+        <span>+15 DoS Flood</span>
+    </button>
+    <button onclick="simulateTraffic('portscan', 15)" class="soc-btn-secondary text-xs font-mono text-amber-400 hover:text-amber-300" title="Simulate multi-port reconnaissance probe">
+        <i data-lucide="crosshair" class="w-3.5 h-3.5 text-amber-400"></i>
+        <span>+15 PortScan</span>
+    </button>
+    <button onclick="simulateTraffic('zero_day', 15)" class="soc-btn-primary text-xs font-mono" title="Simulate novel obfuscated threat wave to trigger drift">
+        <i data-lucide="biohazard" class="w-3.5 h-3.5"></i>
+        <span>+15 Zero-Day Wave</span>
+    </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- ========================================================================
+         1. KPI EXECUTIVE CARDS WITH TREND INDICATORS
+         ======================================================================== -->
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <!-- Card 1: Inspected Flows -->
+        <div class="soc-card p-4 flex flex-col justify-between space-y-2">
+            <div class="flex items-center justify-between text-xs text-[var(--text-muted)] font-mono">
+                <span>INSPECTED FLOWS</span>
+                <i data-lucide="network" class="w-4 h-4 text-indigo-400"></i>
+            </div>
+            <div>
+                <div id="stat-total-flows" class="text-2xl font-black font-mono text-[var(--text-primary)]">
+                    {{ stats.total_flows }}
+                </div>
+                <div class="text-[10px] text-emerald-400 mt-1 flex items-center font-mono">
+                    <i data-lucide="trending-up" class="w-3 h-3 mr-1"></i> +14.2% velocity
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 2: Threats Detected -->
+        <div class="soc-card p-4 flex flex-col justify-between space-y-2 border-rose-500/30">
+            <div class="flex items-center justify-between text-xs text-rose-400 font-mono">
+                <span>THREAT ALERTS</span>
+                <i data-lucide="shield-alert" class="w-4 h-4 text-rose-400"></i>
+            </div>
+            <div>
+                <div id="stat-attacks" class="text-2xl font-black font-mono text-rose-400">
+                    {{ stats.attacks_detected }}
+                </div>
+                <div class="text-[10px] text-rose-400/80 mt-1 font-mono">
+                    Supervised XGBoost
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 3: Isolation Forest Anomalies -->
+        <div class="soc-card p-4 flex flex-col justify-between space-y-2 border-amber-500/30">
+            <div class="flex items-center justify-between text-xs text-amber-400 font-mono">
+                <span>OUTLIER ANOMALIES</span>
+                <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-400"></i>
+            </div>
+            <div>
+                <div id="stat-anomalies" class="text-2xl font-black font-mono text-amber-400">
+                    {{ stats.anomalies_detected }}
+                </div>
+                <div class="text-[10px] text-amber-400/80 mt-1 font-mono">
+                    Isolation Forest Screen
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 4: CTI Threat Queries -->
+        <div class="soc-card p-4 flex flex-col justify-between space-y-2 border-purple-500/30">
+            <div class="flex items-center justify-between text-xs text-purple-400 font-mono">
+                <span>IOC INTEL QUERIES</span>
+                <i data-lucide="fingerprint" class="w-4 h-4 text-purple-400"></i>
+            </div>
+            <div>
+                <div id="stat-cti-queries" class="text-2xl font-black font-mono text-purple-400">
+                    {{ stats.cti_queries }}
+                </div>
+                <div class="text-[10px] text-purple-400/80 mt-1 font-mono">
+                    AlienVault & AbuseIPDB
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 5: Validated Retraining Buffer -->
+        <div class="soc-card p-4 flex flex-col justify-between space-y-2 border-cyan-500/30">
+            <div class="flex items-center justify-between text-xs text-cyan-400 font-mono">
+                <span>CTI BUFFER STATUS</span>
+                <i data-lucide="database" class="w-4 h-4 text-cyan-400"></i>
+            </div>
+            <div>
+                <div id="stat-cti-buffer" class="text-2xl font-black font-mono text-cyan-400">
+                    {{ stats.cti_buffer_pending }} / 25
+                </div>
+                <div class="w-full bg-[var(--bg-elevated)] h-1.5 rounded-full overflow-hidden mt-1 border border-[var(--border-subtle)]">
+                    <div id="mini-buffer-bar" class="h-full bg-cyan-400 transition-all duration-300" style="width: {{ (stats.cti_buffer_pending / 25 * 100)|round }}%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 6: Active Model Performance -->
+        <div class="soc-card p-4 flex flex-col justify-between space-y-2 border-emerald-500/30">
+            <div class="flex items-center justify-between text-xs text-emerald-400 font-mono">
+                <span>MODEL F1-SCORE</span>
+                <i data-lucide="cpu" class="w-4 h-4 text-emerald-400"></i>
+            </div>
+            <div>
+                <div class="flex items-baseline space-x-1.5">
+                    <span id="stat-model-ver" class="text-xl font-bold font-mono text-[var(--text-primary)]">{{ active_version.version if active_version else 'v1.0' }}</span>
+                    <span id="stat-model-f1" class="text-sm font-black font-mono text-emerald-400">{{ "%.1f"|format((active_version.f1_score if active_version else 0.95) * 100) }}%</span>
+                </div>
+                <div class="text-[10px] text-emerald-400/80 mt-1 font-mono">
+                    Weighted Detection Metric
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================================
+         2. CHARTS ROW: TRAFFIC TIMELINE & ATTACK TAXONOMY
+         ======================================================================== -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Area Chart: Traffic Velocity -->
+        <div class="soc-card p-6 lg:col-span-2 space-y-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-base font-bold text-[var(--text-primary)] flex items-center space-x-2">
+                        <i data-lucide="trending-up" class="w-4 h-4 text-indigo-400"></i>
+                        <span>Traffic Ingestion Velocity & Threat Timeline</span>
+                    </h2>
+                    <p class="text-xs text-[var(--text-secondary)]">Throughput of legitimate flows vs detected threat vectors</p>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span class="soc-badge soc-badge-safe font-mono">STREAMING</span>
+                </div>
+            </div>
+            <div class="h-64 relative">
+                <canvas id="trafficVelocityChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Donut Chart: Threat Distribution -->
+        <div class="soc-card p-6 space-y-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-base font-bold text-[var(--text-primary)] flex items-center space-x-2">
+                        <i data-lucide="pie-chart" class="w-4 h-4 text-purple-400"></i>
+                        <span>Threat Taxonomy</span>
+                    </h2>
+                    <p class="text-xs text-[var(--text-secondary)]">Classified attack distribution</p>
+                </div>
+            </div>
+            <div class="h-56 relative flex items-center justify-center">
+                <canvas id="attackTaxonomyChart"></canvas>
+            </div>
+            <div id="taxonomy-legend" class="grid grid-cols-2 gap-2 text-xs font-mono pt-2 border-t border-[var(--border-subtle)]"></div>
+        </div>
+    </div>
+
+    <!-- ========================================================================
+         3. RECENT DETECTIONS & INCIDENT FEED
+         ======================================================================== -->
+    <div class="soc-card p-6 space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+                <h2 class="text-base font-bold text-[var(--text-primary)] flex items-center space-x-2">
+                    <i data-lucide="shield-alert" class="w-4 h-4 text-rose-400"></i>
+                    <span>Real-Time Flow Detections & Anomaly Ingestion</span>
+                </h2>
+                <p class="text-xs text-[var(--text-secondary)]">Live verdicts produced by Hybrid XGBoost + Isolation Forest screening</p>
+            </div>
+            <div class="flex items-center space-x-3">
+                <a href="/live" class="text-xs font-mono font-semibold text-indigo-400 hover:text-indigo-300 flex items-center space-x-1">
+                    <span>Open Live Inspector</span>
+                    <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                </a>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs font-mono">
+                <thead class="bg-[var(--bg-elevated)] text-[var(--text-muted)] uppercase text-[10px] tracking-wider border-b border-[var(--border-subtle)]">
+                    <tr>
+                        <th class="py-3 px-4">Session Reference</th>
+                        <th class="py-3 px-4">Source Origin</th>
+                        <th class="py-3 px-4">Target Endpoint</th>
+                        <th class="py-3 px-4">Classification</th>
+                        <th class="py-3 px-4">Confidence</th>
+                        <th class="py-3 px-4">Isolation Forest</th>
+                        <th class="py-3 px-4 text-right">Attribution</th>
+                    </tr>
+                </thead>
+                <tbody id="dashboard-flow-table-body" class="divide-y divide-[var(--border-subtle)] text-[var(--text-secondary)]">
+                    {% for flow in recent_flows[:10] %}
+                    <tr class="hover:bg-[var(--bg-hover)] transition">
+                        <td class="py-3 px-4 text-indigo-400 font-bold">{{ flow.id }}</td>
+                        <td class="py-3 px-4">{{ flow.src_ip }}</td>
+                        <td class="py-3 px-4">{{ flow.dst_ip }}:{{ flow.dst_port }} ({{ flow.protocol }})</td>
+                        <td class="py-3 px-4">
+                            {% if flow.predicted_class == 'Benign' %}
+                                <span class="soc-badge soc-badge-safe">Benign</span>
+                            {% elif flow.predicted_class == 'DoS_DDoS' %}
+                                <span class="soc-badge soc-badge-attack">DoS / DDoS</span>
+                            {% elif flow.predicted_class == 'PortScan' %}
+                                <span class="soc-badge soc-badge-warning">PortScan</span>
+                            {% elif flow.predicted_class == 'Botnet_C2' %}
+                                <span class="soc-badge soc-badge-purple">Botnet C2</span>
+                            {% else %}
+                                <span class="soc-badge soc-badge-warning">{{ flow.predicted_class }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3 px-4">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-16 bg-[var(--bg-elevated)] rounded-full h-1.5 overflow-hidden border border-[var(--border-subtle)]">
+                                    <div class="bg-indigo-500 h-1.5" style="width: {{ (flow.confidence * 100)|round }}%"></div>
+                                </div>
+                                <span class="font-bold text-[var(--text-primary)]">{{ "%.1f"|format(flow.confidence * 100) }}%</span>
+                            </div>
+                        </td>
+                        <td class="py-3 px-4">
+                            {% if flow.is_anomaly %}
+                                <span class="text-amber-400 font-bold flex items-center">
+                                    <i data-lucide="alert-triangle" class="w-3.5 h-3.5 mr-1 text-amber-400"></i> Anomaly ({{ flow.anomaly_score }})
+                                </span>
+                            {% else %}
+                                <span class="text-[var(--text-muted)]">Normal Profile</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3 px-4 text-right">
+                            <a href="/explain?flow_id={{ flow.id }}" class="soc-btn-secondary text-[11px] py-1 px-2.5 inline-flex items-center space-x-1">
+                                <i data-lucide="brain-circuit" class="w-3 h-3 text-indigo-400"></i>
+                                <span>SHAP XAI</span>
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="py-8 text-center text-[var(--text-muted)] font-sans">
+                            No telemetry flows recorded yet. Use the quick simulation triggers above to populate the pipeline.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let velocityChart = null;
+    let taxonomyChart = null;
+
+    const classColors = {
+        'Benign': '#10B981',
+        'DoS_DDoS': '#EF4444',
+        'PortScan': '#F59E0B',
+        'BruteForce': '#F97316',
+        'Botnet_C2': '#8B5CF6',
+        'Infiltration_Web': '#EC4899'
+    };
+
+    function getChartThemeColors() {
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        return {
+            grid: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(15, 23, 42, 0.06)',
+            tick: isDark ? '#64748B' : '#64748B',
+            text: isDark ? '#F8FAFC' : '#0F172A',
+            border: isDark ? '#121A2F' : '#FFFFFF'
+        };
+    }
+
+    function initCharts(stats) {
+        const theme = getChartThemeColors();
+
+        // 1. Velocity Area Chart
+        const ctxVel = document.getElementById('trafficVelocityChart').getContext('2d');
+        const gradBenign = ctxVel.createLinearGradient(0, 0, 0, 240);
+        gradBenign.addColorStop(0, 'rgba(16, 185, 129, 0.25)');
+        gradBenign.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
+
+        const gradThreat = ctxVel.createLinearGradient(0, 0, 0, 240);
+        gradThreat.addColorStop(0, 'rgba(239, 68, 68, 0.25)');
+        gradThreat.addColorStop(1, 'rgba(239, 68, 68, 0.0)');
+
+        velocityChart = new Chart(ctxVel, {
+            type: 'line',
+            data: {
+                labels: ['T-50', 'T-40', 'T-30', 'T-20', 'T-10', 'Now'],
+                datasets: [
+                    {
+                        label: 'Benign Flows',
+                        data: [24, 28, 22, 35, 30, 36],
+                        borderColor: '#10B981',
+                        backgroundColor: gradBenign,
+                        fill: true,
+                        tension: 0.35,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    },
+                    {
+                        label: 'Threat Alerts',
+                        data: [4, 7, 3, 10, 14, 11],
+                        borderColor: '#EF4444',
+                        backgroundColor: gradThreat,
+                        fill: true,
+                        tension: 0.35,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { labels: { color: theme.tick, font: { family: 'JetBrains Mono', size: 11 } } },
+                    tooltip: { backgroundColor: '#18223C', titleFont: { family: 'JetBrains Mono' }, bodyFont: { family: 'Inter' } }
+                },
+                scales: {
+                    x: { grid: { color: theme.grid }, ticks: { color: theme.tick, font: { family: 'JetBrains Mono', size: 10 } } },
+                    y: { grid: { color: theme.grid }, ticks: { color: theme.tick, font: { family: 'JetBrains Mono', size: 10 } } }
+                }
+            }
+        });
+
+        // 2. Taxonomy Donut Chart
+        const ctxTax = document.getElementById('attackTaxonomyChart').getContext('2d');
+        const dist = stats.distribution || {};
+        const labels = Object.keys(dist).length > 0 ? Object.keys(dist) : ['Benign', 'DoS_DDoS', 'PortScan', 'Botnet_C2'];
+        const values = Object.keys(dist).length > 0 ? Object.values(dist) : [70, 15, 10, 5];
+        const colors = labels.map(l => classColors[l] || '#4F7CFF');
+
+        taxonomyChart = new Chart(ctxTax, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: colors,
+                    borderColor: theme.border,
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                cutout: '72%'
+            }
+        });
+
+        renderLegend(labels, values, colors);
+    }
+
+    function renderLegend(labels, values, colors) {
+        const legendDiv = document.getElementById('taxonomy-legend');
+        legendDiv.innerHTML = labels.map((l, i) => `
+            <div class="flex items-center space-x-1.5 truncate">
+                <span class="w-2.5 h-2.5 rounded-full inline-block shrink-0" style="background-color: ${colors[i]}"></span>
+                <span class="text-[var(--text-secondary)] truncate">${l}:</span>
+                <span class="font-bold text-[var(--text-primary)]">${values[i]}</span>
+            </div>
+        `).join('');
+    }
+
+    // Dynamic Chart Theme Synchronizer
+    window.addEventListener('soc-theme-changed', () => {
+        const theme = getChartThemeColors();
+        if (velocityChart) {
+            velocityChart.options.scales.x.grid.color = theme.grid;
+            velocityChart.options.scales.y.grid.color = theme.grid;
+            velocityChart.options.scales.x.ticks.color = theme.tick;
+            velocityChart.options.scales.y.ticks.color = theme.tick;
+            velocityChart.update();
+        }
+        if (taxonomyChart) {
+            taxonomyChart.data.datasets[0].borderColor = theme.border;
+            taxonomyChart.update();
+        }
+    });
+
+    async function simulateTraffic(type, count) {
+        showToast(`Injecting batch of ${count} ${type.toUpperCase()} flows into detection pipeline...`, 'info');
+        try {
+            const res = await fetch('/api/traffic/simulate', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ traffic_type: type, count: count })
+            });
+            const data = await res.json();
+            if (data.success) {
+                showToast(`Successfully processed ${data.count} flows. Models and drift monitors updated.`, 'success');
+                await refreshDashboardData();
+                updateNavStatus();
+            }
+        } catch (e) {
+            showToast(`Traffic simulation failed: ${e}`, 'error');
+        }
+    }
+
+    async function refreshDashboardData() {
+        try {
+            const res = await fetch('/api/traffic/recent?limit=10');
+            if (res.ok) {
+                const flows = await res.json();
+                renderFlowTable(flows);
+            }
+            const statsRes = await fetch('/api/stats');
+            if (statsRes.ok) {
+                const stats = await statsRes.json();
+                document.getElementById('stat-total-flows').innerText = stats.total_flows;
+                document.getElementById('stat-attacks').innerText = stats.attacks_detected;
+                document.getElementById('stat-anomalies').innerText = stats.anomalies_detected;
+                document.getElementById('stat-cti-queries').innerText = stats.cti_queries;
+                document.getElementById('stat-cti-buffer').innerText = `${stats.cti_buffer_pending} / 25`;
+                
+                const pct = Math.min(100, Math.round((stats.cti_buffer_pending / 25) * 100));
+                document.getElementById('mini-buffer-bar').style.width = `${pct}%`;
+
+                if (taxonomyChart && stats.distribution) {
+                    const labels = Object.keys(stats.distribution);
+                    const values = Object.values(stats.distribution);
+                    taxonomyChart.data.labels = labels;
+                    taxonomyChart.data.datasets[0].data = values;
+                    taxonomyChart.data.datasets[0].backgroundColor = labels.map(l => classColors[l] || '#4F7CFF');
+                    taxonomyChart.update();
+                    renderLegend(labels, values, taxonomyChart.data.datasets[0].backgroundColor);
+                }
+            }
+        } catch (e) {
+            console.error("Dashboard refresh error:", e);
+        }
+    }
+
+    function renderFlowTable(flows) {
+        const tbody = document.getElementById('dashboard-flow-table-body');
+        if (!flows || flows.length === 0) return;
+        tbody.innerHTML = flows.map(flow => {
+            let badgeClass = 'soc-badge-info';
+            if (flow.predicted_class === 'Benign') badgeClass = 'soc-badge-safe';
+            else if (flow.predicted_class === 'DoS_DDoS') badgeClass = 'soc-badge-attack';
+            else if (flow.predicted_class === 'PortScan') badgeClass = 'soc-badge-warning';
+            else if (flow.predicted_class === 'Botnet_C2') badgeClass = 'soc-badge-purple';
+
+            const anomalySpan = flow.is_anomaly
+                ? `<span class="text-amber-400 font-bold flex items-center"><i data-lucide="alert-triangle" class="w-3.5 h-3.5 mr-1 text-amber-400"></i> Anomaly (${flow.anomaly_score})</span>`
+                : `<span class="text-[var(--text-muted)]">Normal Profile</span>`;
+
+            return `
+                <tr class="hover:bg-[var(--bg-hover)] transition">
+                    <td class="py-3 px-4 text-indigo-400 font-bold">${flow.id}</td>
+                    <td class="py-3 px-4">${flow.src_ip}</td>
+                    <td class="py-3 px-4">${flow.dst_ip}:${flow.dst_port} (${flow.protocol})</td>
+                    <td class="py-3 px-4"><span class="soc-badge ${badgeClass}">${flow.predicted_class}</span></td>
+                    <td class="py-3 px-4">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-16 bg-[var(--bg-elevated)] rounded-full h-1.5 overflow-hidden border border-[var(--border-subtle)]">
+                                <div class="bg-indigo-500 h-1.5" style="width: ${Math.round(flow.confidence * 100)}%"></div>
+                            </div>
+                            <span class="font-bold text-[var(--text-primary)]">${(flow.confidence * 100).toFixed(1)}%</span>
+                        </div>
+                    </td>
+                    <td class="py-3 px-4">${anomalySpan}</td>
+                    <td class="py-3 px-4 text-right">
+                        <a href="/explain?flow_id=${flow.id}" class="soc-btn-secondary text-[11px] py-1 px-2.5 inline-flex items-center space-x-1">
+                            <i data-lucide="brain-circuit" class="w-3 h-3 text-indigo-400"></i>
+                            <span>SHAP XAI</span>
+                        </a>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+        lucide.createIcons();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const stats = { distribution: {{ stats.distribution | tojson }} };
+        initCharts(stats);
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,477 @@
+{% extends "base.html" %}
+
+{% block title %}Flow Inspector & Telemetry Studio{% endblock %}
+{% block breadcrumb %}Detection & Telemetry{% endblock %}
+{% block page_title %}Real-Time Network Flow Inspector{% endblock %}
+{% block page_subtitle %}High-frequency packet telemetry ingestion, feature extraction & dual-layer anomaly classification.{% endblock %}
+
+{% block header_actions %}
+<div class="flex flex-wrap items-center gap-2">
+    <!-- Auto-Stream Toggle -->
+    <button id="stream-toggle-btn" onclick="toggleLiveStream()" class="soc-btn-secondary text-xs font-mono">
+        <span id="stream-dot" class="w-2 h-2 rounded-full bg-slate-500 mr-1.5"></span>
+        <span id="stream-text">Auto-Stream: OFF</span>
+    </button>
+    <!-- Craft Flow Modal Button -->
+    <button onclick="openCraftModal()" class="soc-btn-secondary text-xs">
+        <i data-lucide="sliders" class="w-3.5 h-3.5 text-indigo-400"></i>
+        <span>Craft Custom Flow</span>
+    </button>
+    <!-- Batch CSV Upload -->
+    <label class="soc-btn-primary text-xs cursor-pointer">
+        <i data-lucide="file-up" class="w-3.5 h-3.5"></i>
+        <span>Import CSV Logs</span>
+        <input type="file" id="csv-upload-input" accept=".csv" class="hidden" onchange="uploadCSV()">
+    </label>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6" x-data="{ slideoverOpen: false, selectedFlow: null }">
+
+    <!-- Filter & Search Toolbar -->
+    <div class="soc-card p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div class="flex items-center space-x-3 flex-1">
+            <div class="relative w-full max-w-xs">
+                <i data-lucide="search" class="w-4 h-4 absolute left-3 top-2.5 text-[var(--text-muted)]"></i>
+                <input 
+                    type="text" 
+                    id="flow-search" 
+                    placeholder="Filter IP, port, flow hash..." 
+                    oninput="filterFlows()"
+                    class="w-full bg-[var(--bg-elevated)] border border-[var(--border-subtle)] rounded-lg pl-9 pr-3 py-1.5 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-indigo-500 font-mono"
+                >
+            </div>
+            <select id="filter-classification" onchange="filterFlows()" class="bg-[var(--bg-elevated)] border border-[var(--border-subtle)] rounded-lg px-3 py-1.5 text-xs text-[var(--text-primary)] focus:outline-none focus:border-indigo-500 font-mono">
+                <option value="ALL">All Categories</option>
+                <option value="Benign">Benign Only</option>
+                <option value="DoS_DDoS">DoS / DDoS</option>
+                <option value="PortScan">PortScan</option>
+                <option value="BruteForce">BruteForce</option>
+                <option value="Botnet_C2">Botnet C2</option>
+                <option value="Infiltration_Web">Infiltration Web</option>
+            </select>
+        </div>
+
+        <div class="flex items-center space-x-4 text-xs font-mono">
+            <label class="flex items-center space-x-1.5 cursor-pointer text-[var(--text-secondary)]">
+                <input type="checkbox" id="filter-anomaly-only" onchange="filterFlows()" class="rounded bg-[var(--bg-elevated)] border-[var(--border-subtle)] text-indigo-500 focus:ring-0">
+                <span>Anomalies Only</span>
+            </label>
+            <label class="flex items-center space-x-1.5 cursor-pointer text-[var(--text-secondary)]">
+                <input type="checkbox" id="filter-cti-only" onchange="filterFlows()" class="rounded bg-[var(--bg-elevated)] border-[var(--border-subtle)] text-indigo-500 focus:ring-0">
+                <span>CTI Flagged</span>
+            </label>
+            <button onclick="loadFlows()" class="text-[var(--text-muted)] hover:text-[var(--text-primary)] p-1.5 rounded" title="Refresh Table">
+                <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Telemetry Table -->
+    <div class="soc-card overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs font-mono">
+                <thead class="bg-[var(--bg-elevated)] text-[var(--text-muted)] uppercase text-[10px] tracking-wider border-b border-[var(--border-subtle)]">
+                    <tr>
+                        <th class="py-3 px-4">Flow ID & Time</th>
+                        <th class="py-3 px-4">Origin & Target</th>
+                        <th class="py-3 px-4">Severity & Verdict</th>
+                        <th class="py-3 px-4">Confidence</th>
+                        <th class="py-3 px-4">Isolation Forest</th>
+                        <th class="py-3 px-4">CTI Correlation</th>
+                        <th class="py-3 px-4 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="flow-table-body" class="divide-y divide-[var(--border-subtle)] text-[var(--text-secondary)]">
+                    <!-- Populated via JS -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ========================================================================
+         SLIDE-OVER DETAIL DRAWER
+         ======================================================================== -->
+    <div 
+        id="slideover-drawer"
+        class="fixed inset-y-0 right-0 max-w-lg w-full bg-[var(--bg-surface)] border-l border-[var(--border-subtle)] shadow-2xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out p-6 overflow-y-auto"
+    >
+        <div class="flex items-center justify-between pb-4 border-b border-[var(--border-subtle)]">
+            <div>
+                <span class="text-[10px] font-mono text-indigo-400 uppercase tracking-widest block">Flow Telemetry Detail</span>
+                <h3 id="drawer-flow-id" class="text-base font-bold text-[var(--text-primary)] font-mono">FL-XXXXX</h3>
+            </div>
+            <button onclick="closeSlideover()" class="text-[var(--text-muted)] hover:text-[var(--text-primary)] p-1.5 rounded-lg">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <div class="mt-6 space-y-6 text-xs font-sans">
+            <!-- Verdict Status Banner -->
+            <div id="drawer-verdict-box" class="p-4 rounded-xl border flex items-center justify-between">
+                <div>
+                    <span class="text-[10px] uppercase font-mono text-[var(--text-muted)] block">Model Decision</span>
+                    <span id="drawer-verdict-label" class="text-lg font-bold font-mono text-[var(--text-primary)]">--</span>
+                    <span id="drawer-verdict-status" class="text-xs text-[var(--text-secondary)] block mt-0.5">--</span>
+                </div>
+                <div class="text-right font-mono">
+                    <span class="text-[10px] uppercase text-[var(--text-muted)] block">Confidence</span>
+                    <span id="drawer-verdict-conf" class="text-lg font-black text-indigo-400">--%</span>
+                </div>
+            </div>
+
+            <!-- 16 Flow Feature Grid -->
+            <div>
+                <h4 class="text-xs font-mono font-bold uppercase tracking-wider text-[var(--text-muted)] mb-3 flex items-center">
+                    <i data-lucide="list" class="w-3.5 h-3.5 mr-1.5 text-indigo-400"></i>
+                    <span>Extracted 16-Feature Telemetry Vector</span>
+                </h4>
+                <div id="drawer-features-grid" class="grid grid-cols-2 gap-2 font-mono text-[11px]">
+                    <!-- Injected via JS -->
+                </div>
+            </div>
+
+            <!-- CTI Correlation Details -->
+            <div class="p-4 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-subtle)] space-y-2">
+                <h4 class="text-xs font-mono font-bold uppercase tracking-wider text-[var(--text-muted)] flex items-center">
+                    <i data-lucide="fingerprint" class="w-3.5 h-3.5 mr-1.5 text-purple-400"></i>
+                    <span>CTI Transfer Intelligence Match</span>
+                </h4>
+                <div id="drawer-cti-content" class="text-xs text-[var(--text-secondary)] font-mono space-y-1">
+                    <!-- Injected via JS -->
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex items-center space-x-3 pt-4 border-t border-[var(--border-subtle)]">
+                <a id="drawer-shap-link" href="#" class="soc-btn-primary text-xs flex-1">
+                    <i data-lucide="brain-circuit" class="w-3.5 h-3.5"></i>
+                    <span>Explain Prediction (SHAP)</span>
+                </a>
+                <button onclick="closeSlideover()" class="soc-btn-secondary text-xs">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Backdrop for Slideover -->
+    <div id="slideover-backdrop" onclick="closeSlideover()" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40"></div>
+
+    <!-- ========================================================================
+         CRAFT CUSTOM FLOW MODAL
+         ======================================================================== -->
+    <div id="craft-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+        <div class="soc-card max-w-xl w-full p-6 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between pb-3 border-b border-[var(--border-subtle)]">
+                <h3 class="text-base font-bold text-[var(--text-primary)] flex items-center space-x-2">
+                    <i data-lucide="sliders" class="w-4 h-4 text-indigo-400"></i>
+                    <span>Craft & Ingest Custom Telemetry Flow</span>
+                </h3>
+                <button onclick="closeModal('craft-modal')" class="text-[var(--text-muted)] hover:text-[var(--text-primary)]">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <form onsubmit="submitCraftedFlow(event)" class="space-y-4 text-xs font-mono">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-[var(--text-muted)] block mb-1">Source IP</label>
+                        <input type="text" id="craft-src-ip" value="198.51.100.42" class="w-full bg-[var(--bg-elevated)] border border-[var(--border-subtle)] rounded p-2 text-[var(--text-primary)]">
+                    </div>
+                    <div>
+                        <label class="text-[var(--text-muted)] block mb-1">Destination IP</label>
+                        <input type="text" id="craft-dst-ip" value="10.0.0.1" class="w-full bg-[var(--bg-elevated)] border border-[var(--border-subtle)] rounded p-2 text-[var(--text-primary)]">
+                    </div>
+                    <div>
+                        <label class="text-[var(--text-muted)] block mb-1">Destination Port</label>
+                        <input type="number" id="craft-dst-port" value="4444" class="w-full bg-[var(--bg-elevated)] border border-[var(--border-subtle)] rounded p-2 text-[var(--text-primary)]">
+                    </div>
+                    <div>
+                        <label class="text-[var(--text-muted)] block mb-1">Protocol</label>
+                        <select id="craft-proto" class="w-full bg-[var(--bg-elevated)] border border-[var(--border-subtle)] rounded p-2 text-[var(--text-primary)]">
+                            <option value="TCP">TCP</option>
+                            <option value="UDP">UDP</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="pt-3 border-t border-[var(--border-subtle)] space-y-2">
+                    <span class="text-[var(--text-secondary)] font-bold block font-sans">Feature Parameters:</span>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[11px]">
+                        <div>
+                            <label class="text-[var(--text-muted)] block mb-1">Duration (s)</label>
+                            <input type="number" step="0.001" id="craft-duration" value="0.05" class="w-full bg-[var(--bg-elevated)] border border-[var(--border-subtle)] rounded p-1.5 text-[var(--text-primary)]">
+                        </div>
+                        <div>
+                            <label class="text-[var(--text-muted)] block mb-1">SYN Flags</label>
+                            <input type="number" id="craft-syn" value="140" class="w-full bg-[var(--bg-elevated)] border border-[var(--border-subtle)] rounded p-1.5 text-[var(--text-primary)]">
+                        </div>
+                        <div>
+                            <label class="text-[var(--text-muted)] block mb-1">Payload Entropy</label>
+                            <input type="number" step="0.1" id="craft-entropy" value="7.5" class="w-full bg-[var(--bg-elevated)] border border-[var(--border-subtle)] rounded p-1.5 text-[var(--text-primary)]">
+                        </div>
+                        <div>
+                            <label class="text-[var(--text-muted)] block mb-1">Flow Pkts/s</label>
+                            <input type="number" id="craft-pkts-s" value="4200" class="w-full bg-[var(--bg-elevated)] border border-[var(--border-subtle)] rounded p-1.5 text-[var(--text-primary)]">
+                        </div>
+                        <div>
+                            <label class="text-[var(--text-muted)] block mb-1">Flow Bytes/s</label>
+                            <input type="number" id="craft-bytes-s" value="78000" class="w-full bg-[var(--bg-elevated)] border border-[var(--border-subtle)] rounded p-1.5 text-[var(--text-primary)]">
+                        </div>
+                        <div>
+                            <label class="text-[var(--text-muted)] block mb-1">Down/Up Ratio</label>
+                            <input type="number" step="0.1" id="craft-ratio" value="0.2" class="w-full bg-[var(--bg-elevated)] border border-[var(--border-subtle)] rounded p-1.5 text-[var(--text-primary)]">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-3 pt-3 border-t border-[var(--border-subtle)]">
+                    <button type="button" onclick="closeModal('craft-modal')" class="soc-btn-secondary text-xs">Cancel</button>
+                    <button type="submit" class="soc-btn-primary text-xs">Evaluate Flow</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let allFlows = [];
+    let isStreaming = false;
+    let streamInterval = null;
+
+    async function loadFlows() {
+        try {
+            const res = await fetch('/api/traffic/recent?limit=60');
+            if (res.ok) {
+                allFlows = await res.json();
+                filterFlows();
+            }
+        } catch (e) {
+            console.error("Load flows error:", e);
+        }
+    }
+
+    function filterFlows() {
+        const query = document.getElementById('flow-search').value.toLowerCase();
+        const catFilter = document.getElementById('filter-classification').value;
+        const anomalyOnly = document.getElementById('filter-anomaly-only').checked;
+        const ctiOnly = document.getElementById('filter-cti-only').checked;
+
+        const filtered = allFlows.filter(f => {
+            const matchesQuery = !query ||
+                f.id.toLowerCase().includes(query) ||
+                f.src_ip.toLowerCase().includes(query) ||
+                String(f.dst_port).includes(query);
+
+            const matchesCat = (catFilter === 'ALL') || (f.predicted_class === catFilter);
+            const matchesAnomaly = !anomalyOnly || f.is_anomaly;
+            const matchesCti = !ctiOnly || f.requires_cti;
+
+            return matchesQuery && matchesCat && matchesAnomaly && matchesCti;
+        });
+
+        renderTable(filtered);
+    }
+
+    function renderTable(flows) {
+        const tbody = document.getElementById('flow-table-body');
+        if (!flows || flows.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-[var(--text-muted)] font-sans">No matching telemetry flows recorded.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = flows.map(f => {
+            let badgeClass = 'soc-badge-info';
+            if (f.predicted_class === 'Benign') badgeClass = 'soc-badge-safe';
+            else if (f.predicted_class === 'DoS_DDoS') badgeClass = 'soc-badge-attack';
+            else if (f.predicted_class === 'PortScan') badgeClass = 'soc-badge-warning';
+            else if (f.predicted_class === 'Botnet_C2') badgeClass = 'soc-badge-purple';
+
+            const isoBadge = f.is_anomaly
+                ? `<span class="text-amber-400 font-bold flex items-center"><i data-lucide="alert-triangle" class="w-3.5 h-3.5 mr-1 text-amber-400"></i> Outlier (${f.anomaly_score})</span>`
+                : `<span class="text-[var(--text-muted)]">Normal (${f.anomaly_score})</span>`;
+
+            const ctiBadge = f.cti_matched
+                ? `<span class="text-purple-400 font-bold flex items-center"><i data-lucide="check-circle" class="w-3.5 h-3.5 mr-1 text-purple-400"></i> Correlated (${f.cti_threat_score}/100)</span>`
+                : (f.requires_cti ? `<span class="text-indigo-400"><i data-lucide="clock" class="w-3 h-3 inline mr-1"></i> Flagged</span>` : `<span class="text-[var(--text-muted)]">N/A</span>`);
+
+            return `
+                <tr class="hover:bg-[var(--bg-hover)] transition cursor-pointer" onclick="openSlideover('${f.id}')">
+                    <td class="py-3 px-4">
+                        <span class="text-indigo-400 font-bold">${f.id}</span>
+                        <div class="text-[10px] text-[var(--text-muted)] font-sans">${f.timestamp.split('T')[1]?.slice(0,8) || ''}</div>
+                    </td>
+                    <td class="py-3 px-4">${f.src_ip} &rarr; ${f.dst_ip}:${f.dst_port}</td>
+                    <td class="py-3 px-4"><span class="soc-badge ${badgeClass}">${f.predicted_class}</span></td>
+                    <td class="py-3 px-4">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-14 bg-[var(--bg-elevated)] rounded-full h-1.5 overflow-hidden border border-[var(--border-subtle)]">
+                                <div class="bg-indigo-500 h-1.5" style="width: ${Math.round(f.confidence * 100)}%"></div>
+                            </div>
+                            <span class="font-bold text-[var(--text-primary)]">${(f.confidence * 100).toFixed(1)}%</span>
+                        </div>
+                    </td>
+                    <td class="py-3 px-4">${isoBadge}</td>
+                    <td class="py-3 px-4">${ctiBadge}</td>
+                    <td class="py-3 px-4 text-right space-x-1" onclick="event.stopPropagation()">
+                        <button onclick="openSlideover('${f.id}')" class="soc-btn-secondary text-[11px] py-1 px-2">
+                            Inspect
+                        </button>
+                        <a href="/explain?flow_id=${f.id}" class="soc-btn-primary text-[11px] py-1 px-2 inline-flex items-center space-x-1">
+                            <i data-lucide="brain-circuit" class="w-3 h-3"></i>
+                            <span>SHAP</span>
+                        </a>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+        lucide.createIcons();
+    }
+
+    function openSlideover(flowId) {
+        const flow = allFlows.find(f => f.id === flowId);
+        if (!flow) return;
+
+        document.getElementById('drawer-flow-id').innerText = `${flow.id} [${flow.src_ip} -> ${flow.dst_ip}:${flow.dst_port}]`;
+        document.getElementById('drawer-verdict-label').innerText = flow.predicted_class;
+        document.getElementById('drawer-verdict-status').innerText = flow.status || 'Evaluated';
+        document.getElementById('drawer-verdict-conf').innerText = `${(flow.confidence * 100).toFixed(1)}%`;
+        document.getElementById('drawer-shap-link').href = `/explain?flow_id=${flow.id}`;
+
+        const vBox = document.getElementById('drawer-verdict-box');
+        if (flow.predicted_class === 'Benign') {
+            vBox.className = 'p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 flex items-center justify-between';
+        } else {
+            vBox.className = 'p-4 rounded-xl border border-rose-500/30 bg-rose-500/10 flex items-center justify-between';
+        }
+
+        const grid = document.getElementById('drawer-features-grid');
+        grid.innerHTML = Object.entries(flow.features || {}).map(([k, v]) => `
+            <div class="bg-[var(--bg-elevated)] p-2 rounded-lg border border-[var(--border-subtle)]">
+                <span class="text-[var(--text-muted)] text-[10px] block truncate" title="${k}">${k}</span>
+                <span class="text-[var(--text-primary)] font-bold">${typeof v === 'number' ? v.toFixed(2) : v}</span>
+            </div>
+        `).join('');
+
+        const ctiDiv = document.getElementById('drawer-cti-content');
+        ctiDiv.innerHTML = `
+            <div><strong>Requires CTI:</strong> ${flow.requires_cti ? 'Yes (Low Confidence / Outlier)' : 'No (Deterministic)'}</div>
+            <div><strong>Threat Intelligence Match:</strong> ${flow.cti_matched ? `Yes (Threat Score ${flow.cti_threat_score}/100)` : 'None'}</div>
+            <div><strong>Isolation Forest Anomaly Score:</strong> ${flow.anomaly_score} (${flow.is_anomaly ? 'ANOMALOUS' : 'NORMAL'})</div>
+        `;
+
+        document.getElementById('slideover-backdrop').classList.remove('hidden');
+        document.getElementById('slideover-drawer').classList.remove('translate-x-full');
+        lucide.createIcons();
+    }
+
+    function closeSlideover() {
+        document.getElementById('slideover-backdrop').classList.add('hidden');
+        document.getElementById('slideover-drawer').classList.add('translate-x-full');
+    }
+
+    function openCraftModal() {
+        document.getElementById('craft-modal').classList.remove('hidden');
+    }
+
+    function closeModal(id) {
+        document.getElementById(id).classList.add('hidden');
+    }
+
+    async function submitCraftedFlow(e) {
+        e.preventDefault();
+        const duration = parseFloat(document.getElementById('craft-duration').value);
+        const syn = parseFloat(document.getElementById('craft-syn').value);
+        const entropy = parseFloat(document.getElementById('craft-entropy').value);
+        const pkts_s = parseFloat(document.getElementById('craft-pkts-s').value);
+        const bytes_s = parseFloat(document.getElementById('craft-bytes-s').value);
+        const ratio = parseFloat(document.getElementById('craft-ratio').value);
+
+        const flowIn = {
+            src_ip: document.getElementById('craft-src-ip').value,
+            dst_ip: document.getElementById('craft-dst-ip').value,
+            dst_port: parseInt(document.getElementById('craft-dst-port').value),
+            protocol: document.getElementById('craft-proto').value,
+            flow_duration: duration,
+            total_fwd_packets: Math.max(1, syn),
+            total_bwd_packets: Math.max(0, syn * ratio),
+            total_fwd_bytes: syn * 54.0,
+            total_bwd_bytes: (syn * ratio) * 60.0,
+            packet_length_mean: 60.0,
+            packet_length_std: 15.0,
+            flow_bytes_s: bytes_s,
+            flow_packets_s: pkts_s,
+            syn_flag_count: syn,
+            fin_flag_count: 0.0,
+            rst_flag_count: syn > 50 ? 5.0 : 0.0,
+            psh_flag_count: 0.0,
+            ack_flag_count: syn * ratio,
+            down_up_ratio: ratio,
+            payload_entropy: entropy
+        };
+
+        try {
+            const res = await fetch('/api/traffic/ingest', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(flowIn)
+            });
+            const data = await res.json();
+            closeModal('craft-modal');
+            showToast(`Custom flow evaluated as ${data.prediction.predicted_class} (${(data.prediction.confidence * 100).toFixed(1)}%)`, 'success');
+            await loadFlows();
+            openSlideover(data.flow_id);
+        } catch (err) {
+            showToast(`Ingestion error: ${err}`, 'error');
+        }
+    }
+
+    async function uploadCSV() {
+        const input = document.getElementById('csv-upload-input');
+        if (!input.files || input.files.length === 0) return;
+        const formData = new FormData();
+        formData.append("file", input.files[0]);
+
+        try {
+            const res = await fetch('/api/traffic/upload_csv', { method: 'POST', body: formData });
+            const data = await res.json();
+            if (data.success) {
+                showToast(`Processed ${data.processed_rows} flows from CSV successfully`, 'success');
+                await loadFlows();
+            }
+        } catch (err) {
+            showToast(`CSV error: ${err}`, 'error');
+        }
+    }
+
+    function toggleLiveStream() {
+        const dot = document.getElementById('stream-dot');
+        const txt = document.getElementById('stream-text');
+        if (!isStreaming) {
+            isStreaming = true;
+            dot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse-dot mr-1.5';
+            txt.innerText = 'Auto-Stream: ON';
+            showToast('Auto-telemetry streaming enabled (3 flows/3s)', 'info');
+            streamInterval = setInterval(async () => {
+                await fetch('/api/traffic/simulate', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ traffic_type: 'mixed', count: 3 })
+                });
+                await loadFlows();
+            }, 3000);
+        } else {
+            isStreaming = false;
+            clearInterval(streamInterval);
+            dot.className = 'w-2 h-2 rounded-full bg-slate-500 mr-1.5';
+            txt.innerText = 'Auto-Stream: OFF';
+            showToast('Auto-telemetry streaming paused', 'info');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadFlows);
+</script>
+{% endblock %}
